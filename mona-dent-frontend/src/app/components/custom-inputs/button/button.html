@@ -1,0 +1,10 @@
+<button
+  class="flex gap-2 justify-center items-center px-3 py-2 rounded-lg font-semibold text-xs  cursor-pointer transition-all hover:-translate-y-0.5"
+  [routerLink]="router() || null"
+  [type]="type()"
+  [disabled]="disabled()"
+  [class]="getStyles()"
+  (click)="handleClick()"
+>
+  <ng-content />
+</button>

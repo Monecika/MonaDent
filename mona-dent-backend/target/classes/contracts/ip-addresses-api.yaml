@@ -1,0 +1,161 @@
+openapi: 3.0.3
+info:
+  title: Mona Dent IP Allowlist API
+  version: 1.0.0
+paths:
+  /ip-addresses:
+    get:
+      tags:
+        - IP Addresses
+      operationId: getIpAddresses
+      summary: List registered IPv4 addresses
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Registered IP addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IpAddressResponse'
+        '401':
+          description: Authentication required
+        '403':
+          description: Insufficient permissions or IP address is not allowlisted
+    post:
+      tags:
+        - IP Addresses
+      operationId: createIpAddress
+      summary: Register an IPv4 address
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIpAddressRequest'
+      responses:
+        '201':
+          description: IP address registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IpAddressResponse'
+        '400':
+          description: Invalid IP address or request
+        '401':
+          description: Authentication required
+        '403':
+          description: Insufficient permissions or IP address is not allowlisted
+        '409':
+          description: IP address already registered
+  /ip-addresses/{id}:
+    put:
+      tags:
+        - IP Addresses
+      operationId: updateIpAddressName
+      summary: Update the registered IP address name
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateIpAddressRequest'
+      responses:
+        '200':
+          description: IP address name updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IpAddressResponse'
+        '400':
+          description: Invalid name
+        '401':
+          description: Authentication required
+        '403':
+          description: Insufficient permissions or IP address is not allowlisted
+        '404':
+          description: IP address entry not found
+    delete:
+      tags:
+        - IP Addresses
+      operationId: deleteIpAddress
+      summary: Remove a registered IP address
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: IP address removed
+        '401':
+          description: Authentication required
+        '403':
+          description: Insufficient permissions or IP address is not allowlisted
+        '404':
+          description: IP address entry not found
+        '409':
+          description: The final registered IP address cannot be removed
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CreateIpAddressRequest:
+      type: object
+      required:
+        - name
+        - address
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        address:
+          type: string
+          maxLength: 18
+          description: IPv4 address, CIDR network, or wildcard such as 217.103.33.*
+          pattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}(/([0-9]|[12][0-9]|3[0-2]))?$|^([0-9]{1,3}\.){3}\*$'
+          example: 217.103.33.0/24
+    UpdateIpAddressRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+    IpAddressResponse:
+      type: object
+      required:
+        - id
+        - name
+        - address
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        address:
+          type: string

@@ -1,0 +1,149 @@
+#!/bin/bash
+set -euo pipefail
+
+APP_BUNDLE="/Applications/MonaDent.app"
+APP_EXECUTABLE="$APP_BUNDLE/Contents/MacOS/MonaDent"
+PG_INSTALLER_DMG="$APP_BUNDLE/Contents/Resources/postgresql-installer.dmg"
+PG_ROOT="/Library/PostgreSQL/18"
+PG_BIN="$PG_ROOT/bin"
+DATA_ROOT="/Library/Application Support/MonaDent"
+CONFIG="$DATA_ROOT/application.properties"
+BOOTSTRAP="$DATA_ROOT/database-bootstrap.sh"
+SERVICE_PLIST="/Library/LaunchDaemons/com.monadent.app.plist"
+
+/bin/mkdir -p "$DATA_ROOT/logs"
+
+new_secret() {
+  /usr/bin/openssl rand -hex 32
+}
+
+if [[ ! -f "$CONFIG" ]]; then
+  if [[ -f "$BOOTSTRAP" ]]; then
+    # This root-owned file lets a rerun safely resume an interrupted first install.
+    # shellcheck disable=SC1090
+    source "$BOOTSTRAP"
+  else
+    SUPER_PASSWORD="$(new_secret)"
+    APP_PASSWORD="$(new_secret)"
+    /bin/mkdir -p "$DATA_ROOT"
+    cat > "$BOOTSTRAP" <<EOF
+SUPER_PASSWORD='$SUPER_PASSWORD'
+APP_PASSWORD='$APP_PASSWORD'
+EOF
+    /usr/sbin/chown root:wheel "$BOOTSTRAP"
+    /bin/chmod 600 "$BOOTSTRAP"
+  fi
+
+  MOUNT_POINT=''
+  cleanup_installer() {
+    if [[ -n "$MOUNT_POINT" ]]; then
+      /usr/bin/hdiutil detach "$MOUNT_POINT" -quiet >/dev/null 2>&1 || true
+      /bin/rmdir "$MOUNT_POINT" >/dev/null 2>&1 || true
+    fi
+    /bin/rm -f /tmp/install-postgresql.log
+  }
+  trap cleanup_installer EXIT
+
+  if [[ ! -x "$PG_BIN/psql" ]]; then
+    if [[ ! -f "$PG_INSTALLER_DMG" ]]; then
+      echo 'Bundled offline PostgreSQL installer is missing.' >&2
+      exit 1
+    fi
+    MOUNT_POINT="$(/usr/bin/mktemp -d /tmp/mona-dent-pg.XXXXXX)"
+    /usr/bin/hdiutil attach "$PG_INSTALLER_DMG" -nobrowse -quiet -mountpoint "$MOUNT_POINT"
+    INSTALLER="$(/usr/bin/find "$MOUNT_POINT" -path '*/Contents/MacOS/installbuilder.sh' -print -quit)"
+    if [[ -z "$INSTALLER" ]]; then
+      echo 'Could not find the EDB PostgreSQL installer in the bundled disk image.' >&2
+      exit 1
+    fi
+
+    "$INSTALLER" \
+      --mode unattended \
+      --unattendedmodeui none \
+      --enable-components server,commandlinetools \
+      --prefix "$PG_ROOT" \
+      --datadir "$PG_ROOT/data" \
+      --serverport 5432 \
+      --superaccount postgres \
+      --superpassword "$SUPER_PASSWORD"
+    /usr/bin/hdiutil detach "$MOUNT_POINT" -quiet
+    /bin/rmdir "$MOUNT_POINT"
+    MOUNT_POINT=''
+  fi
+
+  READY=0
+  for _ in $(seq 1 60); do
+    if "$PG_BIN/pg_isready" -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
+      READY=1
+      break
+    fi
+    /bin/sleep 2
+  done
+  if [[ "$READY" != 1 ]]; then
+    /usr/bin/sudo -u postgres "$PG_BIN/pg_ctl" -D "$PG_ROOT/data" -l "$DATA_ROOT/logs/postgresql.log" start >/dev/null 2>&1 || true
+    for _ in $(seq 1 30); do
+      if "$PG_BIN/pg_isready" -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
+        READY=1
+        break
+      fi
+      /bin/sleep 2
+    done
+  fi
+  if [[ "$READY" != 1 ]]; then echo 'PostgreSQL did not become ready.' >&2; exit 1; fi
+
+  PGPASSWORD="$SUPER_PASSWORD" "$PG_BIN/psql" -h 127.0.0.1 -p 5432 -U postgres -d postgres -v ON_ERROR_STOP=1 -c "DO \$setup\$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'mona_dent_app') THEN ALTER ROLE mona_dent_app LOGIN PASSWORD '$APP_PASSWORD'; ELSE CREATE ROLE mona_dent_app LOGIN PASSWORD '$APP_PASSWORD'; END IF; END \$setup\$;"
+  DATABASE_EXISTS="$(PGPASSWORD="$SUPER_PASSWORD" "$PG_BIN/psql" -h 127.0.0.1 -p 5432 -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'clinic_db'")"
+  if [[ "$DATABASE_EXISTS" != 1 ]]; then
+    PGPASSWORD="$SUPER_PASSWORD" "$PG_BIN/psql" -h 127.0.0.1 -p 5432 -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE clinic_db OWNER mona_dent_app;'
+  fi
+
+  /bin/mkdir -p "$DATA_ROOT/files" "$DATA_ROOT/backups" "$DATA_ROOT/logs"
+  JWT_SECRET="$(/usr/bin/openssl rand -base64 32 | /usr/bin/tr -d '\n')"
+  cat > "$CONFIG" <<EOF
+spring.datasource.url=jdbc:postgresql://localhost:5432/clinic_db
+spring.datasource.username=mona_dent_app
+spring.datasource.password=$APP_PASSWORD
+security.jwt.secret-key=$JWT_SECRET
+app.files.directory=$DATA_ROOT/files
+server.address=0.0.0.0
+EOF
+  POSTGRES_GROUP="$(/usr/bin/id -gn postgres)"
+  /usr/sbin/chown -R "postgres:$POSTGRES_GROUP" "$DATA_ROOT"
+  /bin/chmod -R 700 "$DATA_ROOT"
+  /bin/chmod 600 "$CONFIG"
+  /bin/rm -f "$BOOTSTRAP"
+  trap - EXIT
+  /bin/rm -f /tmp/install-postgresql.log
+fi
+
+if ! "$PG_BIN/pg_isready" -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
+  echo 'The saved Mona Dent database exists, but PostgreSQL is not running.' >&2
+  exit 1
+fi
+
+cat > "$SERVICE_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.monadent.app</string>
+  <key>UserName</key><string>postgres</string>
+  <key>ProgramArguments</key><array>
+    <string>$APP_EXECUTABLE</string>
+    <string>--spring.config.additional-location=file:${CONFIG// /%20}</string>
+  </array>
+  <key>WorkingDirectory</key><string>$APP_BUNDLE/Contents</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>$DATA_ROOT/logs/application.log</string>
+  <key>StandardErrorPath</key><string>$DATA_ROOT/logs/application-error.log</string>
+</dict></plist>
+EOF
+
+/usr/sbin/chown root:wheel "$SERVICE_PLIST"
+/bin/chmod 644 "$SERVICE_PLIST"
+/usr/bin/xattr -d com.apple.quarantine "$APP_BUNDLE" 2>/dev/null || true
+/bin/rm -f "$PG_INSTALLER_DMG"
+/bin/launchctl bootstrap system "$SERVICE_PLIST" 2>/dev/null || /bin/launchctl kickstart -k system/com.monadent.app
+
+exit 0

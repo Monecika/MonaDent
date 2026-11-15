@@ -1,0 +1,1 @@
+import{w as o,xb as r,z as s}from"./chunk-OVBJOHH4.js";var a=class t{api=s(r);endpoint="auth";login(e){return this.api.post(`${this.endpoint}/login`,e)}updatePassword(e){return this.api.put(`${this.endpoint}/me/password`,e)}static \u0275fac=function(i){return new(i||t)};static \u0275prov=o({token:t,factory:t.\u0275fac,providedIn:"root"})};export{a};

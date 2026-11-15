@@ -1,0 +1,171 @@
+<app-base-form
+  (close)="closeForm()"
+  (submit)="submitForm()"
+  [formTitle]="(isEditing ? 'Edit Appointment' : 'New Appointment') | translate"
+  [submitButton]="(isSubmitting() ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Appointment') | translate"
+  [submitDisabled]="isSubmitting()"
+>
+  <ng-container [formGroup]="form">
+    @if (validationError) {
+      <p class="col-span-full text-sm text-error">{{ validationError | translate }}</p>
+    }
+
+    @if (errorMessage()) {
+      <p class="col-span-full text-sm text-error">{{ errorMessage() | translate }}</p>
+    }
+
+    <div class="flex flex-row! gap-2 items-center col-span-full">
+      <input
+        id="patient-not-registered"
+        type="checkbox"
+        formControlName="isPatientNotRegistered"
+        (change)="onPatientRegistrationChange($event)"
+      />
+      <label for="patient-not-registered">{{ 'Patient is not registered yet' | translate }}</label>
+    </div>
+
+    @if (form.controls.isPatientNotRegistered.value) {
+      <div class="grid! grid-cols-1! gap-3 sm:grid-cols-2!">
+        <div>
+          <label for="new-patient-name">{{ 'Patient name' | translate }}</label>
+          <input id="new-patient-name" type="text" formControlName="newPatientName" required />
+        </div>
+
+        <div>
+          <label for="new-patient-surname">{{ 'Patient surname' | translate }}</label>
+          <input
+            id="new-patient-surname"
+            type="text"
+            formControlName="newPatientSurname"
+            required
+          />
+        </div>
+
+        <div>
+          <label>{{ 'Date of birth' | translate }}</label>
+          <app-custom-calendar
+            [value]="form.controls.newPatientDateOfBirth.value"
+            [maxYear]="currentYear"
+            [placeholder]="'Select date of birth' | translate"
+            (dateSelected)="onNewPatientDateOfBirthChange($event)"
+          />
+        </div>
+
+        <div>
+          <label for="new-patient-phone">{{ 'Phone' | translate }}</label>
+          <input id="new-patient-phone" type="tel" formControlName="newPatientPhone" required />
+        </div>
+      </div>
+    } @else {
+      <div>
+        <label>{{ 'Patient' | translate }}</label>
+        <app-custom-select-input
+          [placeholder]="'Select patient' | translate"
+          [options]="patientOptions"
+          [value]="form.controls.patientId.value"
+          (valueChange)="form.controls.patientId.setValue($event)"
+        />
+      </div>
+    }
+
+    <div>
+      <label>{{ 'Date' | translate }}</label>
+      <app-custom-calendar
+        [selectedDate]="form.controls.selectedDate.value"
+        (dateSelected)="form.controls.selectedDate.setValue($event)"
+      />
+    </div>
+
+    <div>
+      <label>{{ 'Time' | translate }}</label>
+      <app-custom-select-input
+        [placeholder]="'Select time' | translate"
+        [options]="timeOptions"
+        [value]="form.controls.time.value"
+        (valueChange)="form.controls.time.setValue($event)"
+      />
+    </div>
+
+    <div>
+      <label>{{ 'Duration' | translate }}</label>
+      <app-custom-select-input
+        [placeholder]="'Select duration' | translate"
+        [options]="durationOptions"
+        [value]="form.controls.duration.value"
+        (valueChange)="form.controls.duration.setValue($event)"
+      />
+    </div>
+
+    <div [class.col-span-2]="!isEditing">
+      <label>{{ 'Doctor' | translate }}</label>
+      <app-custom-select-input
+        [placeholder]="'Select doctor' | translate"
+        [options]="doctorOptions"
+        [value]="form.controls.doctorId.value"
+        (valueChange)="form.controls.doctorId.setValue($event)"
+      />
+    </div>
+
+    @if (isEditing) {
+      <div>
+        <label>{{ 'Appointment status' | translate }}</label>
+        <app-custom-select-input
+          [placeholder]="'Select status' | translate"
+          [options]="statusOptions"
+          [value]="form.controls.status.value"
+          (valueChange)="changeStatus($event)"
+        />
+      </div>
+
+      <div class="col-span-full grid! grid-cols-1! gap-3 sm:grid-cols-2!">
+        <div class="flex flex-col gap-1">
+          <label for="reason">{{ 'Reason' | translate }}</label>
+          <input id="reason" type="text" formControlName="reason" />
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label for="notes">{{ 'Notes' | translate }}</label>
+          <input id="notes" type="text" formControlName="notes" />
+        </div>
+      </div>
+    } @else {
+      <div>
+        <label for="reason">{{ 'Reason' | translate }}</label>
+        <input id="reason" type="text" formControlName="reason" />
+      </div>
+
+      <div>
+        <label for="notes">{{ 'Notes' | translate }}</label>
+        <input id="notes" type="text" formControlName="notes" />
+      </div>
+    }
+  </ng-container>
+
+  <div class="form-actions-left">
+    @if (isEditing) {
+      @if (deleteError) {
+        <p class="mb-2 text-sm text-error">{{ deleteError | translate }}</p>
+      }
+
+      <button
+        type="button"
+        class="rounded-lg border border-error/20 px-3 py-2 text-sm font-medium text-error transition hover:bg-error-bg disabled:opacity-50"
+        [disabled]="isDeleting"
+        (click)="deleteAppointment()"
+      >
+        {{ (isDeleting ? 'Deleting...' : 'Delete appointment') | translate }}
+      </button>
+    }
+  </div>
+</app-base-form>
+
+@if (isDeleteConfirmOpen) {
+  <app-confirmation-dialog
+    [title]="'Delete appointment' | translate"
+    [message]="'Delete this appointment? This action cannot be undone.' | translate"
+    [confirmLabel]="'Delete' | translate"
+    confirmVariant="danger"
+    (confirmed)="confirmDeleteAppointment()"
+    (cancelled)="cancelDeleteAppointment()"
+  />
+}

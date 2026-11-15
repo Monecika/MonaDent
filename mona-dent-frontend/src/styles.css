@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --color-primary: #17213B;
+  --color-secondary: #6d7486;
+  --color-error: #E11D48;
+
+  --color-background: #F7F8FC;
+  --color-background-hover: #f1f3fc;
+
+  --color-accent: #2856d8;
+  --color-accent-hover: color-mix(in srgb, var(--color-accent) 82%, black);
+  --color-accent-bg: color-mix(in srgb, var(--color-accent) 9%, white);
+  --color-accent-bg-hover: color-mix(in srgb, var(--color-accent) 15%, white);
+
+  --color-border: #EDF0F5;
+  --color-border-hover: #DDE2EC;
+
+  --color-success: #22A06B;
+  --color-warning-bg: #FFF2D5;
+
+  --color-error-bg: #FFF1F2;
+
+  --font-sans: 'DM Sans', sans-serif;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  color: var(--color-primary);
+  min-width: 320px;
+  margin: 0;
+}
+
+app-root {
+  display: block;
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+img,
+video {
+  max-width: 100%;
+}
+
+:root:root,
+[data-color-scheme] {
+  --fc-monarch-primary: var(--color-accent) !important;
+  --fc-monarch-primary-foreground: #ffffff !important;
+}
+
+svg{
+  @apply size-5
+}
+
+label{
+  @apply text-secondary font-medium text-xs;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="password"] {
+  @apply p-2 border border-border rounded-lg outline-0 transition
+}
+
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="tel"]:hover,
+input[type="password"]:hover {
+  @apply border-border-hover
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="tel"]:focus,
+input[type="password"]:focus {
+  @apply border-accent/20
+}

@@ -1,0 +1,504 @@
+<div class="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,3fr)_minmax(250px,0.9fr)]">
+  <app-container classes="min-w-0">
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="flex size-10 items-center justify-center rounded-xl bg-accent-bg text-accent">
+          <svg lucideStethoscope class="size-5"></svg>
+        </span>
+        <div>
+          <h2 class="font-semibold">{{ 'Clinical odontogram' | translate }}</h2>
+          <p class="text-xs text-secondary">{{ 'Select a tooth to inspect and update its record' | translate }}</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 text-[10px] text-secondary">
+        <span class="flex items-center gap-1">
+          <i class="size-2 rounded-full bg-success"></i>{{ 'Healthy' | translate }}
+        </span>
+        <span class="flex items-center gap-1">
+          <i class="size-2 rounded-full bg-error"></i>{{ 'Active problem' | translate }}
+        </span>
+        <span class="flex items-center gap-1">
+          <i class="size-2 rounded-full bg-sky-400"></i>{{ 'Restoration' | translate }}
+        </span>
+        <span class="flex items-center gap-1">
+          <i class="size-2 rounded-full bg-stone-300"></i>{{ 'Not assessed' | translate }}
+        </span>
+        <span class="flex items-center gap-1">
+          <i class="size-2 rounded-full bg-sky-500"></i>{{ 'Implant' | translate }}
+        </span>
+        <span class="flex items-center gap-1">
+          <svg lucideX class="size-3 text-secondary"></svg>{{ 'Missing' | translate }}
+        </span>
+      </div>
+    </div>
+
+    <div class="mb-4 rounded-xl border border-border bg-white p-4">
+      <h3 class="text-sm font-semibold">{{ 'Add a tooth' | translate }}</h3>
+      <p class="mt-1 text-xs text-secondary">
+        {{ 'Only teeth not already in this position are listed. Replacements keep the previous tooth in the record history.' | translate }}
+      </p>
+      <div class="mt-3 grid gap-3 sm:grid-cols-[1fr_1.5fr_auto]">
+        <label class="text-xs font-medium text-secondary">
+          {{ 'Dentition' | translate }}
+          <app-custom-select-input
+            class="mt-1 block"
+            [options]="toothTypeSelectOptions()"
+            [value]="newToothType()"
+            [disabled]="isAddingTooth()"
+            (valueChange)="changeNewToothType($event)"
+          />
+        </label>
+
+        <label class="text-xs font-medium text-secondary">
+          {{ 'Available tooth' | translate }}
+          <app-custom-select-input
+            class="mt-1 block"
+            [placeholder]="'Select a tooth' | translate"
+            [searchPlaceholder]="'Search tooth number...' | translate"
+            [options]="availableToothSelectOptions()"
+            [value]="newToothNumber()?.toString() ?? ''"
+            [disabled]="!availableToothOptions().length || isAddingTooth()"
+            (valueChange)="changeNewToothNumber($event)"
+          />
+        </label>
+
+        <button
+          type="button"
+          class="self-end rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="newToothNumber() === null || isAddingTooth()"
+          (click)="addTooth()"
+        >
+          {{ (isAddingTooth() ? 'Adding...' : 'Add tooth') | translate }}
+        </button>
+      </div>
+
+      @if (!availableToothOptions().length) {
+        <p class="mt-3 text-xs text-secondary">{{ 'No teeth of this type are missing.' | translate }}</p>
+      }
+      @if (addToothError()) {
+        <p class="mt-3 text-xs text-error" role="alert">{{ addToothError() | translate }}</p>
+      }
+      @if (addToothMessage()) {
+        <p class="mt-3 text-xs text-success" role="status">{{ addToothMessage() | translate }}</p>
+      }
+    </div>
+
+    <div class="overflow-x-auto rounded-xl border border-border bg-white p-3 sm:p-4">
+      @if (!upperTeeth().length && !lowerTeeth().length) {
+        @if (toothError()) {
+          <p class="py-10 text-center text-sm text-error" role="alert">{{ toothError() | translate }}</p>
+        } @else {
+          <p class="py-10 text-center text-sm text-secondary">
+            {{ 'No tooth records are available for this patient.' | translate }}
+          </p>
+        }
+      }
+
+      <div class="flex min-w-[690px] justify-center gap-1">
+        @for (tooth of upperTeeth(); track tooth.number; let index = $index) {
+          <button
+            type="button"
+            class="tooth-cell"
+            [disabled]="isSavingTooth()"
+            [class.tooth-midline]="isMidline(tooth, upperTeeth()[index - 1])"
+            [class.tooth-selected]="selectedToothNumber() === tooth.number"
+            [class.tooth-not-assessed]="isNotAssessed(tooth)"
+            [class.tooth-problem]="isProblem(tooth)"
+            [class.tooth-implant]="hasFinding(tooth, 'IMPLANT')"
+            [class.tooth-has-filling]="hasFilling(tooth)"
+            [class.tooth-has-crown]="hasFinding(tooth, 'CROWN')"
+            [class.tooth-gum-disease]="hasGumDisease(tooth)"
+            [class.tooth-missing]="hasAbsentTooth(tooth)"
+            [attr.aria-label]="('Select tooth' | translate) + ' ' + tooth.number + ', ' + findingSummary(tooth)"
+            [attr.aria-pressed]="selectedToothNumber() === tooth.number"
+            (click)="selectTooth(tooth)"
+          >
+            <span class="tooth-number">{{ tooth.number }}</span>
+            @if (hasAbsentTooth(tooth)) {
+              <svg lucideX class="tooth-missing-icon"></svg>
+            } @else {
+                <svg
+                  class="tooth-shape tooth-shape-upper"
+                  [class.tooth-molar]="tooth.kind === 'molar'"
+                  [class.tooth-premolar]="tooth.kind === 'premolar'"
+                  [class.tooth-canine]="tooth.kind === 'canine'"
+                  [class.tooth-incisor]="tooth.kind === 'incisor'"
+                  viewBox="0 0 40 56"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M7 17 Q4 9 10 8 Q15 6 20 11 Q25 6 30 8 Q36 9 33 17 L30 29 Q29 39 25 48 Q22 53 20 39 Q18 53 15 48 Q11 39 10 29 Z"
+                  ></path>
+                  <path
+                    [style.fill]="toothCrownFill(tooth)"
+                    d="M7 17 Q4 9 10 8 Q15 6 20 11 Q25 6 30 8 Q36 9 33 17 L30 28 Q20 32 10 28 Z"
+                  ></path>
+                  @if (hasFinding(tooth, 'CROWN')) {
+                    <path
+                      class="tooth-crown-overlay"
+                      d="M7 17 Q4 9 10 8 Q15 6 20 11 Q25 6 30 8 Q36 9 33 17 L30 28 Q20 32 10 28 Z"
+                    ></path>
+                  }
+                  <path
+                    [style.fill]="toothRootFill(tooth)"
+                    d="M10 28 Q20 32 30 28 L30 29 Q29 39 25 48 Q22 53 20 39 Q18 53 15 48 Q11 39 10 29 Z"
+                  ></path>
+                  <path class="tooth-groove" d="M10 19 Q20 25 30 19"></path>
+                  @if (hasCaries(tooth)) {
+                    <circle class="tooth-caries-mark" cx="20" cy="18" r="3"></circle>
+                  }
+                  @if (hasFilling(tooth)) {
+                    <rect class="tooth-filling-mark" x="16" y="13" width="8" height="4" rx="1"></rect>
+                  }
+                  @if (hasGumDisease(tooth)) {
+                    <path class="tooth-gum-mark" d="M8 28 Q20 34 32 28"></path>
+                  }
+                  @if (hasPulpitis(tooth)) {
+                    <circle class="tooth-pulp-mark" cx="20" cy="27" r="3"></circle>
+                  }
+                  @if (hasRootProblem(tooth)) { <text class="tooth-diagnosis-mark" x="13" y="47">R</text> }
+                  @if (hasPeriodontitis(tooth)) { <text class="tooth-diagnosis-mark" x="22" y="47">Pt</text> }
+                </svg>
+              }
+              @if (hasFinding(tooth, 'IMPLANT')) {
+                <span class="tooth-implant-mark" [attr.title]="'Implant' | translate" aria-hidden="true">
+                  <svg viewBox="0 0 16 24"><path d="M5 2h6v5l2 3-2 12H5L3 10l2-3zM4 12h8M5 16h6M6 19h4" /></svg>
+                </span>
+              }
+              @if (mobilityLabel(tooth); as mobility) {
+                <span class="tooth-mobility-mark" [attr.title]="mobility | translate">{{ mobilityBadge(tooth) }}</span>
+              }
+            <span class="tooth-caption">{{ toothCaptionLabel(tooth) | translate }}</span>
+          </button>
+        }
+      </div>
+
+      <div
+        class="my-4 flex items-center gap-3 text-[9px] uppercase tracking-[0.2em] text-secondary"
+      >
+        <span class="h-px flex-1 border-t border-dashed border-border"></span>
+        <span>{{ 'Upper arch' | translate }}</span>
+        <span class="h-px flex-1 border-t border-dashed border-border"></span>
+      </div>
+
+      <div class="flex min-w-[690px] justify-center gap-1 px-1 pt-3">
+        @for (tooth of lowerTeeth(); track tooth.number; let index = $index) {
+          <button
+            type="button"
+            class="tooth-cell"
+            [disabled]="isSavingTooth()"
+            [class.tooth-midline]="isMidline(tooth, lowerTeeth()[index - 1])"
+            [class.tooth-selected]="selectedToothNumber() === tooth.number"
+            [class.tooth-not-assessed]="isNotAssessed(tooth)"
+            [class.tooth-problem]="isProblem(tooth)"
+            [class.tooth-implant]="hasFinding(tooth, 'IMPLANT')"
+            [class.tooth-has-filling]="hasFilling(tooth)"
+            [class.tooth-has-crown]="hasFinding(tooth, 'CROWN')"
+            [class.tooth-gum-disease]="hasGumDisease(tooth)"
+            [class.tooth-missing]="hasAbsentTooth(tooth)"
+            [attr.aria-label]="('Select tooth' | translate) + ' ' + tooth.number + ', ' + findingSummary(tooth)"
+            [attr.aria-pressed]="selectedToothNumber() === tooth.number"
+            (click)="selectTooth(tooth)"
+          >
+            <span class="tooth-caption">{{ toothCaptionLabel(tooth) | translate }}</span>
+            @if (hasAbsentTooth(tooth)) {
+              <svg lucideX class="tooth-missing-icon"></svg>
+            } @else {
+                <svg
+                  class="tooth-shape"
+                  [class.tooth-molar]="tooth.kind === 'molar'"
+                  [class.tooth-premolar]="tooth.kind === 'premolar'"
+                  [class.tooth-canine]="tooth.kind === 'canine'"
+                  [class.tooth-incisor]="tooth.kind === 'incisor'"
+                  viewBox="0 0 40 56"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M7 17 Q4 9 10 8 Q15 6 20 11 Q25 6 30 8 Q36 9 33 17 L30 29 Q29 39 25 48 Q22 53 20 39 Q18 53 15 48 Q11 39 10 29 Z"
+                  ></path>
+                  <path
+                    [style.fill]="toothCrownFill(tooth)"
+                    d="M7 17 Q4 9 10 8 Q15 6 20 11 Q25 6 30 8 Q36 9 33 17 L30 28 Q20 32 10 28 Z"
+                  ></path>
+                  @if (hasFinding(tooth, 'CROWN')) {
+                    <path
+                      class="tooth-crown-overlay"
+                      d="M7 17 Q4 9 10 8 Q15 6 20 11 Q25 6 30 8 Q36 9 33 17 L30 28 Q20 32 10 28 Z"
+                    ></path>
+                  }
+                  <path
+                    [style.fill]="toothRootFill(tooth)"
+                    d="M10 28 Q20 32 30 28 L30 29 Q29 39 25 48 Q22 53 20 39 Q18 53 15 48 Q11 39 10 29 Z"
+                  ></path>
+                  <path class="tooth-groove" d="M10 19 Q20 25 30 19"></path>
+                  @if (hasCaries(tooth)) { <circle class="tooth-caries-mark" cx="20" cy="18" r="3"></circle> }
+                  @if (hasFilling(tooth)) { <rect class="tooth-filling-mark" x="16" y="13" width="8" height="4" rx="1"></rect> }
+                  @if (hasGumDisease(tooth)) { <path class="tooth-gum-mark" d="M8 28 Q20 34 32 28"></path> }
+                  @if (hasPulpitis(tooth)) { <circle class="tooth-pulp-mark" cx="20" cy="27" r="3"></circle> }
+                  @if (hasRootProblem(tooth)) { <text class="tooth-diagnosis-mark" x="13" y="47">R</text> }
+                  @if (hasPeriodontitis(tooth)) { <text class="tooth-diagnosis-mark" x="22" y="47">Pt</text> }
+                </svg>
+              }
+              @if (hasFinding(tooth, 'IMPLANT')) {
+                <span class="tooth-implant-mark" [attr.title]="'Implant' | translate" aria-hidden="true">
+                  <svg viewBox="0 0 16 24"><path d="M5 2h6v5l2 3-2 12H5L3 10l2-3zM4 12h8M5 16h6M6 19h4" /></svg>
+                </span>
+              }
+              @if (mobilityLabel(tooth); as mobility) {
+                <span class="tooth-mobility-mark" [attr.title]="mobility | translate">{{ mobilityBadge(tooth) }}</span>
+              }
+            <span class="tooth-number">{{ tooth.number }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  </app-container>
+
+  <app-container classes="flex flex-col">
+    @if (selectedTooth(); as tooth) {
+      <p class="text-[10px] font-semibold uppercase tracking-wider text-accent">{{ 'Selected tooth' | translate }}</p>
+      <h2 class="mt-1 text-xl font-semibold">Tooth {{ tooth.number }}</h2>
+      <p class="mt-2 text-xs leading-relaxed text-secondary">
+        {{ 'Combine clinical findings, restorations, and mobility for this tooth.' | translate }}
+      </p>
+      @if (tooth.notes) {
+        <div class="mt-3 rounded-lg border border-accent/20 bg-accent-bg p-3">
+          <p class="text-[10px] font-semibold uppercase tracking-wider text-accent">{{ 'Existing notes' | translate }}</p>
+          <p class="mt-1 whitespace-pre-wrap text-sm text-primary">{{ tooth.notes }}</p>
+        </div>
+      }
+      @if (isSavingTooth()) {
+        <p class="mt-3 text-xs text-accent" role="status">{{ 'Saving tooth changes...' | translate }}</p>
+      }
+
+      <label class="mt-5 block text-xs font-medium text-secondary">{{ 'Clinical status' | translate }}</label>
+      <app-custom-select-input
+        class="mt-2 block"
+        [options]="assessmentStatusOptions()"
+        [placeholder]="'Select clinical status' | translate"
+        [value]="assessmentStatusValue()"
+        [disabled]="!selectedToothRecord() || isSavingTooth()"
+        (valueChange)="changeAssessmentStatus($event)"
+      />
+
+      <div class="mt-4 space-y-4">
+        @for (group of findingGroups; track group.title) {
+          <fieldset class="rounded-lg border border-border p-3">
+            <legend class="px-1 text-xs font-semibold text-secondary">{{ group.title | translate }}</legend>
+            <div class="grid grid-cols-2 gap-2">
+              @for (finding of group.findings; track finding) {
+                <label class="flex items-center gap-2 text-xs text-primary">
+                  <input
+                    type="checkbox"
+                    class="size-4 accent-accent"
+                    [checked]="isFindingSelected(finding)"
+                    [disabled]="!selectedToothRecord() || isSavingTooth()"
+                    (change)="toggleFinding(finding, $any($event.target).checked)"
+                  />
+                  {{ findingLabel(finding) | translate }}
+                </label>
+              }
+            </div>
+          </fieldset>
+        }
+      </div>
+
+      <label class="mt-4 text-xs font-medium text-secondary">{{ 'Mobility' | translate }}</label>
+      <app-custom-select-input
+        class="mt-2 block"
+        [options]="mobilityOptions()"
+        [value]="selectedMobilityGradeValue()"
+        [disabled]="!selectedToothRecord() || isSavingTooth() || hasAbsentTooth(tooth)"
+        (valueChange)="changeMobilityGrade($event)"
+      />
+
+      <label for="tooth-notes" class="mt-4 text-xs font-medium text-secondary">{{ 'Notes' | translate }}</label>
+      @if (!selectedToothRecord()) {
+        <p class="mt-2 text-xs text-secondary">
+          {{ 'No backend tooth record was returned for tooth' | translate }} {{ tooth.number }}.
+        </p>
+      }
+      <textarea
+        id="tooth-notes"
+        autocomplete="off"
+        class="mt-2 min-h-36 w-full resize-y rounded-lg border border-border bg-white p-3 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        [placeholder]="'Add clinical notes for this tooth...' | translate"
+        [value]="toothNotesDraft()"
+        [disabled]="!selectedToothRecord() || isSavingTooth()"
+        (input)="updateToothNotes($event)"
+      ></textarea>
+
+      <button
+        type="button"
+        class="mt-3 w-full rounded-lg bg-accent px-3 py-2.5 text-sm font-medium text-white transition hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
+        [disabled]="!selectedToothRecord() || isSavingTooth() || toothChangesUnchanged()"
+        (click)="saveToothChanges()"
+      >
+        {{ (isSavingTooth() ? 'Saving...' : 'Save changes') | translate }}
+      </button>
+
+      @if (toothError()) {
+        <p class="mt-3 text-xs text-error" role="alert">{{ toothError() | translate }}</p>
+      }
+      @if (toothSaveMessage()) {
+        <div
+          class="mt-3 flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2.5 text-xs text-success"
+        >
+          <svg lucideCheck class="size-4 shrink-0"></svg>
+          {{ toothSaveMessage() | translate }}
+        </div>
+      }
+    }
+  </app-container>
+</div>
+
+<app-container classes="mt-4">
+  <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h2 class="font-semibold">{{ 'Tooth history' | translate }}</h2>
+      <p class="mt-1 text-xs text-secondary">
+        @if (toothHistoryFilter() !== null) {
+          {{ 'Showing history for tooth' | translate }} #{{ toothHistoryFilter() }}
+        } @else {
+          {{ 'Additions, replacements, and clinical updates — newest first.' | translate }}
+        }
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      @if (toothHistoryFilter() !== null) {
+        <button type="button" class="rounded-lg border border-border px-3 py-2 text-xs font-medium text-secondary transition hover:text-primary" (click)="showAllToothHistory()">
+          {{ 'Show all history' | translate }}
+        </button>
+      }
+      @if (isLoadingToothHistory()) {
+        <span class="text-xs text-secondary">{{ 'Refreshing history...' | translate }}</span>
+      } @else {
+        <span class="rounded-full bg-accent-bg px-3 py-1 text-xs font-medium text-accent">
+          @if (toothHistoryFilter() !== null) {
+            {{ filteredToothHistory().length }} / {{ toothHistory().length }}
+          } @else {
+            {{ toothHistory().length }}
+          }
+          {{ filteredToothHistory().length === 1 ? 'change' : 'changes' }}
+        </span>
+      }
+    </div>
+  </div>
+
+  @if (toothHistoryError()) {
+    <p class="rounded-lg bg-error-bg px-4 py-3 text-sm text-error" role="alert">
+      {{ toothHistoryError() | translate }}
+    </p>
+  } @else if (filteredToothHistory().length) {
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[680px] text-left text-sm">
+        <thead class="border-b border-border text-xs uppercase tracking-wide text-secondary">
+          <tr>
+            <th scope="col" class="px-3 py-3 font-medium">{{ 'When' | translate }}</th>
+            <th scope="col" class="px-3 py-3 font-medium">{{ 'Tooth' | translate }}</th>
+            <th scope="col" class="px-3 py-3 font-medium">{{ 'Change' | translate }}</th>
+            <th scope="col" class="px-3 py-3 font-medium">{{ 'Details' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          @for (event of visibleToothHistory(); track event.historyId) {
+            <tr class="align-top">
+              <td class="whitespace-nowrap px-3 py-4 text-xs text-secondary">
+                {{ event.changedAt | localizedDate: 'd MMM y' }}<br />
+                <span class="mt-1 inline-block">{{ event.changedAt | localizedDate: 'HH:mm' }}</span>
+              </td>
+              <td class="whitespace-nowrap px-3 py-4">
+                <span class="font-semibold">#{{ event.toothNumber }}</span>
+                <span class="mt-1 block text-xs text-secondary">
+                  {{ historyToothTypeLabel(event.toothType) | translate }}
+                </span>
+                @if (event.eventType === 'TOOTH_REPLACED' && event.previousToothNumber) {
+                  <span class="mt-1 block text-xs text-secondary">
+                    {{ 'Replaced' | translate }} #{{ event.previousToothNumber }} ({{
+                      historyToothTypeLabel(event.previousToothType) | translate
+                    }})
+                  </span>
+                }
+              </td>
+              <td class="whitespace-nowrap px-3 py-4">
+                <span
+                  class="rounded-full bg-background px-2.5 py-1 text-xs font-medium text-primary"
+                >
+                  {{ historyEventLabel(event.eventType) | translate }}
+                </span>
+              </td>
+              <td class="px-3 py-4">
+                <p [innerHTML]="historyEventDescriptionHtml(event)"></p>
+                @if (event.notes) {
+                  <p
+                    class="mt-2 whitespace-pre-wrap rounded-md bg-background px-3 py-2 text-xs text-secondary"
+                  >
+                    {{ event.notes }}
+                  </p>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (toothHistoryPageCount() > 1) {
+      <nav
+        class="mt-4 flex items-center justify-between gap-2 border-t border-border pt-3"
+        [attr.aria-label]="'Tooth history pages' | translate"
+      >
+        <button
+          type="button"
+          class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border text-secondary transition hover:border-border-hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          [disabled]="toothHistoryPage() === 0"
+          [attr.aria-label]="'First page' | translate"
+          (click)="firstToothHistoryPage()"
+        >
+          <svg lucideChevronsLeft class="size-4"></svg>
+        </button>
+        <button
+          type="button"
+          class="flex items-center gap-1 rounded-lg border border-border px-2 py-2 text-sm text-secondary transition hover:border-border-hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 sm:px-3"
+          [disabled]="toothHistoryPage() === 0"
+          [attr.aria-label]="'Previous page' | translate"
+          (click)="previousToothHistoryPage()"
+        >
+          <svg lucideChevronLeft class="size-4"></svg>
+          <span class="hidden sm:inline">{{ 'Previous' | translate }}</span>
+        </button>
+        <span class="whitespace-nowrap text-xs text-secondary">
+          {{ 'Page' | translate }} {{ toothHistoryPage() + 1 }} {{ 'of' | translate }}
+          {{ toothHistoryPageCount() }}
+        </span>
+        <button
+          type="button"
+          class="flex items-center gap-1 rounded-lg border border-border px-2 py-2 text-sm text-secondary transition hover:border-border-hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 sm:px-3"
+          [disabled]="toothHistoryPage() >= toothHistoryPageCount() - 1"
+          [attr.aria-label]="'Next page' | translate"
+          (click)="nextToothHistoryPage()"
+        >
+          <span class="hidden sm:inline">{{ 'Next' | translate }}</span>
+          <svg lucideChevronRight class="size-4"></svg>
+        </button>
+        <button
+          type="button"
+          class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border text-secondary transition hover:border-border-hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          [disabled]="toothHistoryPage() >= toothHistoryPageCount() - 1"
+          [attr.aria-label]="'Last page' | translate"
+          (click)="lastToothHistoryPage()"
+        >
+          <svg lucideChevronsRight class="size-4"></svg>
+        </button>
+      </nav>
+    }
+  } @else if (toothHistory().length) {
+    <p class="rounded-lg bg-background px-4 py-6 text-center text-sm text-secondary">
+      {{ 'No changes recorded for this tooth.' | translate }}
+    </p>
+  } @else {
+    <p class="rounded-lg bg-background px-4 py-6 text-center text-sm text-secondary">
+      {{ 'No tooth changes have been recorded yet.' | translate }}
+    </p>
+  }
+</app-container>

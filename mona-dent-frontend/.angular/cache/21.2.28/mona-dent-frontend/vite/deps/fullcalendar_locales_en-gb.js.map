@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../node_modules/fullcalendar/chunks/c5f9ee8d.js"],
+  "sourcesContent": ["var l21 = {\n    code: 'en-gb',\n    week: {\n        dow: 1, // Monday is the first day of the week.\n        doy: 4, // The week that contains Jan 4th is the first week of the year.\n    },\n    weekTextShort: 'W',\n    todayHint: 'This $0',\n    prevHint: 'Previous $0',\n    nextHint: 'Next $0',\n    viewHint: '$0 view',\n    navLinkHint: 'Go to $0',\n    moreLinkHint(eventCnt) {\n        return `Show ${eventCnt} more event${eventCnt === 1 ? '' : 's'}`;\n    },\n};\n\nexport { l21 as l };\n"],
+  "mappings": ";;;AAAA,IAAI,MAAM;AAAA,EACN,MAAM;AAAA,EACN,MAAM;AAAA,IACF,KAAK;AAAA;AAAA,IACL,KAAK;AAAA;AAAA,EACT;AAAA,EACA,eAAe;AAAA,EACf,WAAW;AAAA,EACX,UAAU;AAAA,EACV,UAAU;AAAA,EACV,UAAU;AAAA,EACV,aAAa;AAAA,EACb,aAAa,UAAU;AACnB,WAAO,QAAQ,QAAQ,cAAc,aAAa,IAAI,KAAK,GAAG;AAAA,EAClE;AACJ;",
+  "names": []
+}

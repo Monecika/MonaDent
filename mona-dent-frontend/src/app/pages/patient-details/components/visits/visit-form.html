@@ -1,0 +1,66 @@
+<app-base-form
+  (close)="close.emit()"
+  (submit)="submitForm()"
+  [formTitle]="'Create Visit' | translate"
+  [submitButton]="(isSubmitting() ? 'Saving...' : 'Create Visit') | translate"
+  [submitDisabled]="isSubmitting()"
+>
+  <ng-container [formGroup]="form">
+    @if (validationError) {
+      <p class="col-span-full text-sm text-error">{{ validationError | translate }}</p>
+    }
+
+    @if (errorMessage()) {
+      <p class="col-span-full text-sm text-error">{{ errorMessage() | translate }}</p>
+    }
+
+    <div>
+      <label>{{ 'Date' | translate }}</label>
+      <app-custom-calendar
+        [selectedDate]="form.controls.selectedDate.value"
+        [maxYear]="currentYear + 5"
+        (dateSelected)="form.controls.selectedDate.setValue($event)"
+      />
+    </div>
+
+    <div>
+      <label>{{ 'Time' | translate }}</label>
+      <app-custom-select-input
+        [placeholder]="'Select time' | translate"
+        [options]="timeOptions"
+        [value]="form.controls.time.value"
+        (valueChange)="form.controls.time.setValue($event)"
+      />
+    </div>
+
+    <div>
+      <label>{{ 'Duration' | translate }}</label>
+      <app-custom-select-input
+        [placeholder]="'Select duration' | translate"
+        [options]="durationOptions"
+        [value]="form.controls.duration.value"
+        (valueChange)="form.controls.duration.setValue($event)"
+      />
+    </div>
+
+    <div>
+      <label>{{ 'Doctor' | translate }}</label>
+      <app-custom-select-input
+        [placeholder]="'Select doctor' | translate"
+        [options]="doctorOptions"
+        [value]="form.controls.doctorId.value"
+        (valueChange)="form.controls.doctorId.setValue($event)"
+      />
+    </div>
+
+    <div>
+      <label for="visit-description">{{ 'Description' | translate }}</label>
+      <input id="visit-description" type="text" formControlName="description" />
+    </div>
+
+    <div>
+      <label for="visit-notes">{{ 'Notes' | translate }}</label>
+      <input id="visit-notes" type="text" formControlName="notes" />
+    </div>
+  </ng-container>
+</app-base-form>

@@ -1,0 +1,60 @@
+<app-container classes="mt-4">
+  <div class="mb-5 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="flex size-10 items-center justify-center rounded-xl bg-accent-bg text-accent">
+        <svg lucideCalendarDays class="size-5"></svg>
+      </span>
+      <div>
+        <h2 class="font-semibold">{{ 'Appointments' | translate }}</h2>
+        <p class="text-xs text-secondary">{{ 'Scheduled and cancelled patient appointments' | translate }}</p>
+      </div>
+    </div>
+    <app-button (click)="create.emit()">
+      <svg lucidePlus class="size-4"></svg>
+      {{ 'Create Appointment' | translate }}
+    </app-button>
+  </div>
+
+  @if (isLoading()) {
+    <p class="py-6 text-center text-sm text-secondary">{{ 'Loading appointments...' | translate }}</p>
+  } @else if (errorMessage()) {
+    <p class="py-6 text-center text-sm text-error">{{ errorMessage() | translate }}</p>
+  } @else {
+    <div class="relative ml-1 border-l border-border">
+      @for (appointment of sortedAppointments(); track appointment.appointmentId) {
+        <article class="relative flex min-h-17 items-center justify-between gap-4 pl-4">
+          <span
+            class="absolute left-[-7px] size-3 rounded-full border-[3px] border-white bg-accent ring-4 ring-accent-bg"
+          ></span>
+          <div>
+            <h3 class="font-semibold">
+              {{ appointment.appointmentDate | localizedDate: 'yyyy-MM-dd · HH:mm' }}
+            </h3>
+            <p class="mt-1 text-sm text-secondary">
+              {{ appointment.description || ('Appointment' | translate) }} · {{ appointment.employee.role | translate }}
+              {{ appointment.employee.name }} {{ appointment.employee.surname }}
+            </p>
+          </div>
+          <div class="flex shrink-0 items-center gap-2">
+            <span
+              class="rounded-full px-3 py-1 text-xs"
+              [class]="
+                appointment.status === 'SCHEDULED'
+                  ? 'rounded-full bg-success/10 px-3 py-1 text-xs text-success'
+                  : 'rounded-full bg-background px-3 py-1 text-xs text-secondary'
+              "
+            >
+              {{ statusLabel(appointment.status) | translate }}
+            </span>
+            <app-button variant="basic" (click)="edit.emit(appointment)">
+              <svg lucidePencil class="size-4"></svg>
+              {{ 'Edit' | translate }}
+            </app-button>
+          </div>
+        </article>
+      } @empty {
+        <p class="py-6 pl-4 text-sm text-secondary">{{ 'No appointments found.' | translate }}</p>
+      }
+    </div>
+  }
+</app-container>

@@ -1,0 +1,130 @@
+@if (isAppointmentOpen) {
+  <app-appointment-form
+    (close)="closeAppointmentPopup()"
+    (saved)="onAppointmentSaved($event)"
+    (patientCreated)="onPatientCreated($event)"
+  />
+}
+
+@if (isPatientOpen) {
+  <app-patient-form
+    (close)="closePatientPopup()"
+    (created)="onPatientCreated($event)"
+  />
+}
+
+<div class="grid grid-cols-4 gap-5 items-start">
+  <app-container class="col-span-4 min-w-0" classes="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <app-page-header
+      [page]="'Clinic Dashboard' | translate"
+      [title]="('Good afternoon, ' | translate) + getUserName() + '!'"
+      [note]="'Chișinău Central Clinic' | translate"
+    />
+    <div class="flex flex-wrap gap-2 sm:gap-3">
+      <p class="bg-background text-primary px-3 py-2 rounded-lg font-semibold text-xs">{{ 'Today' | translate }} · {{ currentDate | localizedDate: 'd MMMM' }}</p>
+      <app-button variant="secondary" (click)="openPatientPopup() ">
+        <svg lucideUser class="size-4"></svg>
+        {{ 'New Patient' | translate }}
+      </app-button>
+      <app-button variant="primary" (click)="openAppointmentPopup()">
+        <svg lucidePlus class="size-4"></svg>
+        {{ 'Quick appointment' | translate }}
+      </app-button>
+    </div>
+  </app-container>
+
+  <app-container class="col-span-4 md:col-span-2">
+    <div class="flex items-center gap-2">
+      <span class="flex size-5 items-center text-accent">
+        <svg lucideCalendarDays></svg>
+      </span>
+      <p class="text-sm font-semibold">{{ 'Appointments today' | translate }}</p>
+    </div>
+
+    <div class="mt-7 flex items-end gap-2">
+      @if (isLoading()) {
+        <span class="text-sm text-secondary">{{ 'Loading...' | translate }}</span>
+      } @else if (appointmentsError()) {
+        <span class="text-sm text-error">{{ appointmentsError() }}</span>
+      } @else {
+        <p class="text-3xl font-semibold">{{ appointments().length }}</p>
+        <p class="text-xs font-semibold text-accent">{{ 'scheduled' | translate }}</p>
+      }
+    </div>
+    <p class="mt-2 text-[10px] text-secondary">{{ 'For the selected branch today' | translate }}</p>
+  </app-container>
+
+  <app-container class="col-span-4 md:col-span-2">
+    <div class="flex items-center gap-2">
+      <span class="flex size-5 items-center text-accent">
+        <svg lucideUser></svg>
+      </span>
+      <p class="text-sm font-semibold">{{ 'New patients this month' | translate }}</p>
+    </div>
+    <div class="mt-7 flex items-end gap-2">
+      @if (isPatientsLoading()) {
+        <span class="text-sm text-secondary">{{ 'Loading...' | translate }}</span>
+      } @else if (patientsError()) {
+        <span class="text-sm text-error">{{ patientsError() }}</span>
+      } @else {
+        <p class="text-3xl font-semibold">{{ newPatientsThisMonth() }}</p>
+        <p class="text-xs font-semibold text-accent">{{ 'patients' | translate }}</p>
+      }
+    </div>
+    <p class="mt-2 text-[10px] text-secondary">{{ 'Based on patient registration date' | translate }}</p>
+  </app-container>
+
+  <app-container class="col-span-4" classes="flex flex-col gap-6">
+    <div class="flex justify-between items-center">
+      <div class="flex gap-2 items-center">
+        <span class=" p-3 bg-accent-bg rounded-lg text-accent">
+          <svg lucideClock class="size-5"></svg>
+        </span>
+        <div>
+          <h2 class="text-lg font-medium">{{ "Today's Schedule" | translate }}</h2>
+          <p class="text-xs text-secondary">{{ 'Live patient flow and operating status' | translate }}</p>
+        </div>
+      </div>
+
+      <app-button variant="secondary" router="/appointments">{{ 'View Calendar' | translate }}</app-button>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      @if (isLoading()) {
+        <p class="py-4 text-center text-sm text-secondary">{{ "Loading today's appointments..." | translate }}</p>
+      } @else if (appointmentsError()) {
+        <p class="py-4 text-center text-sm text-error">{{ appointmentsError() }}</p>
+      } @else {
+        @for (appointment of appointments(); track appointment.appointmentId) {
+          <article
+            class="grid grid-cols-1 items-start gap-2 rounded-xl border-l-3 border-accent bg-background p-3 sm:grid-cols-[0.5fr_1fr_1fr_0.5fr] sm:items-center sm:gap-4 sm:p-2">
+            <div>
+              <p class="font-semibold text-sm text-accent">{{ formatTime(appointment.appointmentDate) }}</p>
+              <p class="text-xs text-secondary">{{ appointment.durationMinutes }} min</p>
+            </div>
+
+            <div>
+              <p class="font-medium text-sm">
+                {{ appointment.patient.name }}
+                {{ appointment.patient.surname }}
+              </p>
+              <p class="text-xs text-secondary">{{ appointment.description }}</p>
+            </div>
+
+            <p class="text-[10px] text-secondary">
+              {{ 'Practitioner:' | translate }} <span
+              class="text-sm">{{ appointment.employee.name }} {{ appointment.employee.surname }}</span>
+            </p>
+
+            <p class="p-2 bg-accent-bg text-accent rounded-full text-center text-[10px]">
+              {{ appointment.status.replace('_', ' ') }}
+            </p>
+          </article>
+        } @empty {
+          <p class="py-4 text-center text-sm text-secondary">{{ 'No appointments scheduled for today.' | translate }}</p>
+        }
+      }
+    </div>
+  </app-container>
+
+</div>

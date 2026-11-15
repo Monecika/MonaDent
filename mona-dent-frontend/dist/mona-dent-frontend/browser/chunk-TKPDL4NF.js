@@ -1,0 +1,1 @@
+import"./chunk-7CGTOI24.js";var t={code:"en-gb",week:{dow:1,doy:4},weekTextShort:"W",todayHint:"This $0",prevHint:"Previous $0",nextHint:"Next $0",viewHint:"$0 view",navLinkHint:"Go to $0",moreLinkHint(e){return`Show ${e} more event${e===1?"":"s"}`}};export{t as default};

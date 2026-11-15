@@ -1,0 +1,110 @@
+@if (isLoading() || isSavingChange) {
+  <app-loader />
+}
+
+@if (isFormOpen) {
+  <app-appointment-form
+    [data]="formData"
+    (close)="closeForm()"
+    (saved)="onAppointmentSaved($event)"
+    (delete)="onAppointmentDeleted($event)"
+  />
+}
+
+@if (branchStore.selectedBranch()) {
+<app-container classes="mt-5">
+  <div class="mb-5">
+    <div class="flex flex-wrap items-center justify-between gap-2 max-[399px]:flex-col max-[399px]:items-stretch">
+      <div
+        class="calendar-controls flex max-w-full items-center gap-1"
+        [class.w-fit]="!isCompactToolbar()"
+        [class.w-full]="isCompactToolbar()"
+      >
+        <button
+          type="button"
+          class="flex shrink-0 items-center justify-center px-2"
+          (click)="changeWeek(-1)"
+        >
+          <svg lucideChevronLeft></svg>
+        </button>
+
+        <button
+          type="button"
+          class="whitespace-nowrap px-3 text-xs"
+          (click)="goToday()"
+        >
+          {{ 'Today' | translate }}
+        </button>
+
+        <button
+          type="button"
+          class="flex shrink-0 items-center justify-center px-2"
+          (click)="changeWeek(1)"
+        >
+          <svg lucideChevronRight></svg>
+        </button>
+      </div>
+
+      <app-custom-calendar
+        class="max-w-full"
+        [class.w-fit]="!isCompactToolbar()"
+        [class.w-full]="isCompactToolbar()"
+        [fitContent]="!isCompactToolbar()"
+        [selectedDate]="selectedDate"
+        [selectWeek]="!isMobileView()"
+        (dateSelected)="onDateChange($event)"
+      />
+
+      <div
+        class="min-w-0"
+        [class.w-fit]="!isCompactToolbar()"
+        [class.w-full]="isCompactToolbar()"
+      >
+        <app-custom-select-input
+          [placeholder]="'All doctors' | translate"
+          [options]="doctorOptions"
+          [widePanel]="true"
+          [(value)]="selectedDoctor"
+          (valueChange)="onDoctorChange()"
+        />
+      </div>
+    </div>
+
+    <h3 class="mt-4 text-center font-semibold">{{ weekTitle }}</h3>
+  </div>
+
+  @if (changeError()) {
+    <p class="mb-3 rounded-lg bg-error-bg p-3 text-sm text-error">
+      {{ changeError() | translate }}
+    </p>
+  }
+
+  <div class="calendar-container">
+    <full-calendar
+      [options]="calendarOptions"
+    ></full-calendar>
+  </div>
+</app-container>
+} @else if (!branchStore.isLoading()) {
+  <app-container classes="mt-5">
+    <p class="py-4 text-center text-sm text-secondary">
+      {{
+        branchStore.loadError() ||
+          (branchStore.branches() === null
+            ? ('Unable to load branches.' | translate)
+            : ('No branches are assigned to your account.' | translate))
+      }}
+    </p>
+  </app-container>
+}
+
+@if (isConfirmPopupOpen) {
+  <app-confirmation-dialog
+    title="Confirm appointment change"
+    message="Are you sure you want to change this appointment?"
+    confirmLabel="Yes"
+    cancelLabel="No"
+    (confirmed)="confirmChange()"
+    (cancelled)="cancelChange()"
+  />
+}

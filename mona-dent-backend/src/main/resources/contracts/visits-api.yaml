@@ -1,0 +1,165 @@
+openapi: 3.0.3
+info:
+  title: Mona Dent Visits API
+  version: 1.0.0
+paths:
+  /visits:
+    post:
+      tags:
+        - Visits
+      operationId: createVisit
+      summary: Create a visit
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVisitRequest'
+      responses:
+        '201':
+          description: Visit created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitResponse'
+  /visits/patient/{patientId}:
+    get:
+      tags:
+        - Visits
+      operationId: getPatientVisits
+      summary: Get all visits for a patient
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Patient visits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VisitResponse'
+        '404':
+          description: Patient not found
+  /visits/patient/{patientId}/last:
+    get:
+      tags:
+        - Visits
+      operationId: getLastPatientVisit
+      summary: Get the most recent visit for a patient
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Most recent patient visit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitResponse'
+        '204':
+          description: Patient has no visits
+        '404':
+          description: Patient not found
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    VisitStatus:
+      type: string
+      enum:
+        - IN_PROGRESS
+        - COMPLETED
+    CreateVisitRequest:
+      type: object
+      required:
+        - branchId
+        - patientId
+        - doctorId
+        - visitDate
+      properties:
+        branchId:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        doctorId:
+          type: string
+          format: uuid
+        appointmentId:
+          type: string
+          format: uuid
+          nullable: true
+        visitDate:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: integer
+          minimum: 1
+          default: 5
+        description:
+          type: string
+        notes:
+          type: string
+    VisitResponse:
+      type: object
+      required:
+        - visitId
+        - branchName
+        - patientId
+        - doctorRole
+        - doctorName
+        - doctorSurname
+        - visitDate
+        - durationMinutes
+        - status
+      properties:
+        visitId:
+          type: string
+          format: uuid
+        branchName:
+          type: string
+        patientId:
+          type: string
+          format: uuid
+        doctorRole:
+          type: string
+          example: "Dr."
+        doctorName:
+          type: string
+        doctorSurname:
+          type: string
+        appointmentId:
+          type: string
+          format: uuid
+          nullable: true
+        visitDate:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: integer
+        description:
+          type: string
+        notes:
+          type: string
+        status:
+          $ref: '#/components/schemas/VisitStatus'

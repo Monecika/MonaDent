@@ -1,0 +1,21 @@
+@if (isFormOpen) {
+  <app-appointment-form
+    (close)="closeForm()"
+    (saved)="onAppointmentSaved()"
+  />
+}
+
+<section class="flex flex-wrap items-center justify-between gap-3">
+  <app-page-header
+    [page]="'schedule' | translate"
+    [title]="'Appointments' | translate"
+    [note]="'Plan and manage the clinic week.' | translate"
+  />
+
+  <app-button (click)="openForm()">
+    <svg lucidePlus class="size-5"></svg>
+    {{ 'New Appointment' | translate }}
+  </app-button>
+</section>
+
+<app-calendar class="mt-5" />

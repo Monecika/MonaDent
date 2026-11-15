@@ -1,0 +1,5 @@
+@reference "../../../../../styles.css"
+
+label {
+  @apply font-medium text-xs text-secondary
+}

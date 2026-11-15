@@ -1,0 +1,156 @@
+@if (addressToDelete(); as address) {
+  <app-confirmation-dialog
+    [title]="text('Remove registered IP address')"
+    [message]="text('Remove this IP address? This computer may lose API access.')"
+    [confirmLabel]="'Delete' | translate"
+    confirmVariant="danger"
+    (confirmed)="confirmDelete()"
+    (cancelled)="addressToDelete.set(null)"
+  />
+}
+
+<section class="flex flex-wrap items-center justify-between gap-3">
+  <app-page-header
+    [title]="'ADMINISTRATION' | translate"
+    [page]="'IP allowlist' | translate"
+    [note]="text('Register one IPv4 address or a network range to allow its devices to access the API.')"
+  />
+</section>
+
+<app-container classes="mt-5">
+  <p class="mb-5 rounded-lg bg-accent-bg p-3 text-sm text-secondary">
+    {{ text('The first allowed address must be configured when the server starts. An empty list blocks all API access.') }}
+  </p>
+
+  @if (errorMessage()) {
+    <p class="mb-3 rounded-lg bg-error-bg p-3 text-sm text-error" role="alert">
+      {{ errorMessage() | translate }}
+    </p>
+  }
+  @if (successMessage()) {
+    <p class="mb-3 rounded-lg bg-accent-bg p-3 text-sm text-accent" role="status">
+      {{ successMessage() | translate }}
+    </p>
+  }
+
+  <form
+    class="mb-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_auto]"
+    [formGroup]="form"
+    autocomplete="off"
+    (ngSubmit)="saveAddress()"
+  >
+    <label class="flex flex-col gap-1 text-sm md:contents">
+      <span class="md:col-start-1 md:row-start-1">{{ text('Name / location') }}</span>
+      <input
+        class="rounded-lg border border-border px-3 py-2 md:col-start-1 md:row-start-2"
+        formControlName="name"
+        maxlength="100"
+        [placeholder]="text('For example, Chișinău office')"
+      />
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <span class="text-xs text-error md:col-start-1 md:row-start-3">{{ text('Enter a name (up to 100 characters).') }}</span>
+      }
+    </label>
+
+    <label class="flex flex-col gap-1 text-sm md:contents">
+      <span class="md:col-start-2 md:row-start-1">{{ text('IPv4 address or range') }}</span>
+      <input
+        class="rounded-lg border border-border px-3 py-2 md:col-start-2 md:row-start-2"
+        formControlName="address"
+        inputmode="decimal"
+        maxlength="18"
+        placeholder="217.103.33.* or 217.103.33.0/24"
+      />
+      @if (form.controls.address.touched && form.controls.address.invalid) {
+        <span class="text-xs text-error md:col-start-2 md:row-start-3">{{ text('Enter a valid IPv4 address, wildcard, or CIDR range.') }}</span>
+      }
+    </label>
+
+    <div class="flex items-center gap-2 md:col-start-3 md:row-start-2">
+      <app-button type="submit" [disabled]="isSubmitting()">
+        @if (editingId()) {
+          <svg lucidePencil class="size-5"></svg>
+        } @else {
+          <svg lucidePlus class="size-5"></svg>
+        }
+        {{
+          isSubmitting()
+            ? ('Saving...' | translate)
+            : editingId()
+              ? ('Save changes' | translate)
+              : text('Register IP address')
+        }}
+      </app-button>
+      @if (editingId()) {
+        <app-button variant="basic" (click)="cancelEdit()">{{ 'Cancel' | translate }}</app-button>
+      }
+    </div>
+  </form>
+
+  <p class="mb-3 text-xs text-secondary">
+    {{ text('Register a replacement IP before removing the old one.') }}
+  </p>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left">
+      <thead>
+        <tr class="text-xs text-secondary *:pb-2">
+          <th>{{ text('Name / location') }}</th>
+          <th>{{ text('IPv4 address') }}</th>
+          <th class="w-20"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (address of addresses(); track address.id) {
+          <tr class="border-t border-border *:py-3">
+            <td>
+              <div class="flex items-center gap-3">
+                <span class="flex size-10 items-center justify-center rounded-full bg-accent-bg text-accent">
+                  <svg lucideGlobe class="size-5"></svg>
+                </span>
+                <span class="text-sm font-medium">{{ address.name }}</span>
+              </div>
+            </td>
+            <td class="font-mono text-sm text-secondary">{{ address.address }}</td>
+            <td>
+              <div class="flex justify-end">
+                <app-button
+                  variant="basic"
+                  [disabled]="isSubmitting() || deletingId() !== null || editingId() !== null"
+                  [attr.aria-label]="text('Edit IP address name')"
+                  (click)="editAddress(address)"
+                >
+                  <svg lucidePencil class="size-5"></svg>
+                </app-button>
+                <app-button
+                  variant="basic"
+                  [disabled]="addresses().length <= 1 || deletingId() !== null || editingId() !== null"
+                  [attr.aria-label]="text('Remove registered IP address')"
+                  (click)="requestDelete(address)"
+                >
+                  <svg lucideTrash class="size-5 text-error"></svg>
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="3" class="py-8 text-center text-sm text-secondary">
+              @if (isLoading()) {
+                {{ text('Loading registered IP addresses...') }}
+              } @else {
+                {{ text('No IP addresses are registered.') }}
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (addresses().length === 1) {
+    <p class="mt-3 text-xs text-secondary">
+      {{ text('You cannot remove the last registered address. Register another first.') }}
+    </p>
+  }
+</app-container>

@@ -1,0 +1,44 @@
+@reference "../../../../styles.css";
+
+.doctor-filter-panel {
+  width: 100%;
+  max-width: calc(100vw - 2rem);
+}
+
+.doctor-select-sizer {
+  display: block;
+  height: 0;
+  overflow: hidden;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  padding: 0.25rem;
+  border: 1px solid transparent;
+  visibility: hidden;
+}
+
+.doctor-select-sizer-row {
+  display: flex;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  white-space: normal;
+}
+
+.doctor-select-sizer-row > span:not(.doctor-color-dot) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.doctor-color-dot {
+  display: block;
+  width: 0.625rem;
+  height: 0.625rem;
+  flex: 0 0 0.625rem;
+  border: 1px solid rgb(0 0 0 / 12%);
+  border-radius: 9999px;
+}

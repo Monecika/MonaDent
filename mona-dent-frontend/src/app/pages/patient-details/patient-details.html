@@ -1,0 +1,174 @@
+@if (patient(); as currentPatient) {
+  <app-container classes="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex min-w-0 items-center gap-3">
+      <span
+        class="flex size-14 items-center justify-center rounded-full bg-accent-bg font-semibold text-accent"
+      >
+        {{ getInitials(currentPatient) }}
+      </span>
+      <app-page-header
+        [page]="'PATIENT #' + currentPatient.patientId.slice(0, 8)"
+        [title]="currentPatient.name + ' ' + currentPatient.surname"
+        [note]="
+          currentPatient.phone + ' · ' + ('Born' | translate) + ' ' + (currentPatient.dateOfBirth | localizedDate: 'd MMM yyyy')
+        "
+      />
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <app-button variant="basic" (click)="isPatientFormOpen.set(true)">
+        <svg lucidePencil class="size-4"></svg>
+        {{ 'Edit Patient' | translate }}
+      </app-button>
+      <app-button variant="basic" (click)="openMedicalRecordOptions()">
+        <svg lucideDownload></svg>
+        {{ 'Download Medical Record' | translate }}
+      </app-button>
+    </div>
+  </app-container>
+  @if (isMedicalRecordOptionsOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" (click)="isMedicalRecordOptionsOpen.set(false)">
+      <section
+        class="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="'Download Medical Record' | translate"
+        (click)="$event.stopPropagation()"
+      >
+        <h2 class="text-lg font-semibold">{{ 'Download Medical Record' | translate }}</h2>
+        <p class="mt-1 text-sm text-secondary">{{ 'Choose report language and date range.' | translate }}</p>
+
+        <div class="mt-5 grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+          <div class="input-container sm:col-span-2">
+            <label>{{ 'Language' | translate }}</label>
+            <app-custom-select-input
+              [options]="medicalRecordLanguageOptions"
+              [value]="medicalRecordLanguage()"
+              [placeholder]="'Select language'"
+              (selectionChange)="setMedicalRecordLanguage($event.value)"
+            />
+          </div>
+          <div class="input-container">
+            <label>{{ 'Start date' | translate }}</label>
+            <app-custom-calendar
+              [value]="medicalRecordDateFrom()"
+              [placeholder]="'Select start date' | translate"
+              (dateSelected)="setMedicalRecordDateFrom($event)"
+            />
+            @if (medicalRecordDateFrom()) {
+              <button type="button" class="mt-1 cursor-pointer text-xs text-secondary hover:text-primary" (click)="clearMedicalRecordDateFrom()">
+                {{ 'Clear date' | translate }}
+              </button>
+            }
+          </div>
+          <div class="input-container">
+            <label>{{ 'End date' | translate }}</label>
+            <app-custom-calendar
+              [value]="medicalRecordDateTo()"
+              [placeholder]="'Select end date' | translate"
+              (dateSelected)="setMedicalRecordDateTo($event)"
+            />
+            @if (medicalRecordDateTo()) {
+              <button type="button" class="mt-1 cursor-pointer text-xs text-secondary hover:text-primary" (click)="clearMedicalRecordDateTo()">
+                {{ 'Clear date' | translate }}
+              </button>
+            }
+          </div>
+        </div>
+        <p class="mt-2 text-xs text-secondary">{{ 'Leave both dates blank to include all records.' | translate }}</p>
+        @if (medicalRecordError()) {
+          <p class="mt-3 text-sm text-error" role="alert">{{ medicalRecordError() | translate }}</p>
+        }
+        <div class="mt-6 flex justify-end gap-2">
+          <app-button variant="basic" (click)="isMedicalRecordOptionsOpen.set(false)">{{ 'Cancel' | translate }}</app-button>
+          <app-button [disabled]="isMedicalRecordDateRangeInvalid() || isGeneratingMedicalRecord()" (click)="generateMedicalRecord(currentPatient)">
+            <svg lucideDownload class="size-4"></svg>
+            {{ 'Generate PDF' | translate }}
+          </app-button>
+        </div>
+      </section>
+    </div>
+  }
+
+  <div class="mt-5 flex gap-3 overflow-x-auto border-b border-border">
+    @for (tab of tabs; track tab.value) {
+      <button
+        type="button"
+        class="shrink-0 cursor-pointer border-b-2 px-4 py-4 text-xs font-semibold transition sm:px-6"
+        [class.border-accent]="activeTab === tab.value"
+        [class.text-accent]="activeTab === tab.value"
+        [class.border-transparent]="activeTab !== tab.value"
+        [class.text-secondary]="activeTab !== tab.value"
+        [class.hover:bg-accent-bg]="activeTab !== tab.value"
+        [class.hover:text-accent]="activeTab !== tab.value"
+        (click)="activeTab = tab.value"
+      >
+        {{ tab.label | translate }}
+      </button>
+    }
+  </div>
+
+  <app-overview
+    [hidden]="activeTab !== 'overview'"
+    [patientId]="currentPatient.patientId"
+    [initialTeeth]="initialTeeth()"
+    [initialToothHistory]="toothHistory()"
+    [initialToothError]="toothError()"
+    [initialToothHistoryError]="toothHistoryError()"
+  />
+
+  @if (isPatientFormOpen()) {
+    <app-patient-form
+      [patient]="currentPatient"
+      (close)="isPatientFormOpen.set(false)"
+      (updated)="onPatientUpdated($event)"
+    />
+  }
+
+  @if (isAppointmentFormOpen()) {
+    <app-appointment-form
+      [data]="appointmentFormData()"
+      (close)="isAppointmentFormOpen.set(false)"
+      (saved)="onAppointmentSaved($event)"
+    />
+  }
+
+  @if (isVisitFormOpen()) {
+    <app-visit-form
+      [patientId]="currentPatient.patientId"
+      (close)="isVisitFormOpen.set(false)"
+      (saved)="onVisitSaved($event)"
+    />
+  }
+
+  @if (activeTab === 'visits') {
+    <app-visits
+      [visits]="visits()"
+      [isLoading]="isLoading()"
+      [errorMessage]="errorMessage()"
+      (create)="isVisitFormOpen.set(true)"
+    />
+  }
+
+  @if (activeTab === 'appointments') {
+    <app-appointments
+      [appointments]="appointments()"
+      [isLoading]="isLoading()"
+      [errorMessage]="errorMessage()"
+      (create)="openAppointmentForm(currentPatient)"
+      (edit)="openEditAppointment($event)"
+    />
+  }
+
+  <app-files [patientId]="patient()?.patientId ?? ''" [hidden]="activeTab !== 'files'" />
+} @else if (isLoading()) {
+  <app-container classes="mt-5">
+    <p class="py-8 text-center text-sm text-secondary">{{ 'Loading patient...' | translate }}</p>
+  </app-container>
+} @else {
+  <app-container classes="mt-5">
+    <p class="py-8 text-center text-sm text-secondary">
+      {{ (errorMessage() || 'Patient not found.') | translate }}
+    </p>
+  </app-container>
+}

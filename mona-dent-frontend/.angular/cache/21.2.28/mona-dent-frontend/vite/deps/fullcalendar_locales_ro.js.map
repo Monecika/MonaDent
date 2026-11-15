@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../node_modules/fullcalendar/chunks/e06c9ff0.js"],
+  "sourcesContent": ["var l60 = {\n    code: 'ro',\n    week: {\n        dow: 1, // Monday is the first day of the week.\n        doy: 7, // The week that contains Jan 1st is the first week of the year.\n    },\n    prevText: 'precedentă',\n    nextText: 'următoare',\n    todayText: 'Azi',\n    yearText: 'An',\n    monthText: 'Lună',\n    weekTextLong: 'Săptămână',\n    weekTextShort: 'Săpt',\n    dayText: 'Zi',\n    listText: 'Agendă',\n    allDayText: 'Toată\\nziua',\n    moreLinkText(n) {\n        return '+alte ' + n;\n    },\n    noEventsText: 'Nu există evenimente de afișat',\n};\n\nexport { l60 as l };\n"],
+  "mappings": ";;;AAAA,IAAI,MAAM;AAAA,EACN,MAAM;AAAA,EACN,MAAM;AAAA,IACF,KAAK;AAAA;AAAA,IACL,KAAK;AAAA;AAAA,EACT;AAAA,EACA,UAAU;AAAA,EACV,UAAU;AAAA,EACV,WAAW;AAAA,EACX,UAAU;AAAA,EACV,WAAW;AAAA,EACX,cAAc;AAAA,EACd,eAAe;AAAA,EACf,SAAS;AAAA,EACT,UAAU;AAAA,EACV,YAAY;AAAA,EACZ,aAAa,GAAG;AACZ,WAAO,WAAW;AAAA,EACtB;AAAA,EACA,cAAc;AAClB;",
+  "names": []
+}

@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="26eccfc7-03a3-4a19-a2b6-b6661f86de61" name="Changes" comment="fix logo" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="146" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="HTML File" />
+        <option value="TypeScript File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/node_modules/@supabase/auth-js/src/lib/types.ts" root0="SKIP_INSPECTION" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.7766464996765987" />
+      <entry key="MS500" value="4.48866667059409" />
+      <entry key="S2" value="12.604830965380703" />
+      <entry key="S5" value="23.59145170125884" />
+      <entry key="S10" value="32.3900594514881" />
+      <entry key="S30" value="42.38410081120995" />
+      <entry key="S60" value="45.87349059669158" />
+      <entry key="M2" value="47.88033478067228" />
+      <entry key="M5" value="51.455834877863666" />
+      <entry key="M10" value="60.421802843305066" />
+      <entry key="M15" value="67.96848207045092" />
+      <entry key="M30" value="80.63618734116302" />
+      <entry key="H1" value="89.92581733569008" />
+      <entry key="H2" value="95.58253492990609" />
+      <entry key="H4" value="99.75579145157036" />
+      <entry key="D1" value="799.9960977373977" />
+      <entry key="W1" value="6971.848320604962" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="2.9184365455756046E-39" />
+      <entry key="MS500" value="1.9634961362777942E-8" />
+      <entry key="S2" value="0.0118545638355232" />
+      <entry key="S5" value="0.18202593963472502" />
+      <entry key="S10" value="0.5315717689263539" />
+      <entry key="S30" value="1.4286607451943623" />
+      <entry key="S60" value="2.0073579627368243" />
+      <entry key="M2" value="2.4332820753961517" />
+      <entry key="M5" value="2.7531565288184683" />
+      <entry key="M10" value="2.8728992119235417" />
+      <entry key="M15" value="2.9144229298303217" />
+      <entry key="M30" value="2.956783245261907" />
+      <entry key="H1" value="2.9782837913916675" />
+      <entry key="H2" value="2.9898096532113048" />
+      <entry key="H4" value="3.021032065701357" />
+      <entry key="D1" value="14.83533168396956" />
+      <entry key="W1" value="119.2176649982535" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="1.7150784029760864" />
+      <entry key="MS500" value="4.222029471023133" />
+      <entry key="S2" value="12.457001537566814" />
+      <entry key="S5" value="23.56045515834133" />
+      <entry key="S10" value="32.632724111082325" />
+      <entry key="S30" value="43.55199464587986" />
+      <entry key="S60" value="47.694956584075534" />
+      <entry key="M2" value="50.19966039648872" />
+      <entry key="M5" value="54.156920155198556" />
+      <entry key="M10" value="63.26732724928504" />
+      <entry key="M15" value="70.86430027422654" />
+      <entry key="M30" value="83.58346207554878" />
+      <entry key="H1" value="92.89928733375902" />
+      <entry key="H2" value="98.56992135762273" />
+      <entry key="H4" value="102.77560529863386" />
+      <entry key="D1" value="814.8308880254818" />
+      <entry key="W1" value="7091.0654751583215" />
+    </decayedShown>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3LK8JqbkPLhWmgb6vOLWejgvnPS" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;builder&quot;,
+    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/mona/Documents/business/projects/mona-dent/mona-dent-frontend/public&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.jshint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.jshint&quot;: &quot;&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;npm.Angular CLI Server.executor&quot;: &quot;Run&quot;,
+    &quot;npm.ng.executor&quot;: &quot;Run&quot;,
+    &quot;prettierjs.PrettierConfiguration.Package&quot;: &quot;/Users/mona/Documents/business/projects/mona-dent/mona-dent-frontend/node_modules/prettier&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.AcpAgentsConfigurable&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/mona/Documents/business/projects/mona-dent/mona-dent-frontend/node_modules/typescript/lib&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/public" />
+      <recent name="$PROJECT_DIR$/src/app/core" />
+      <recent name="$PROJECT_DIR$/src/app/core/models" />
+      <recent name="$PROJECT_DIR$/src/app/core/services" />
+      <recent name="$PROJECT_DIR$/src/app/pages/appointments" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/app/pages" />
+      <recent name="$PROJECT_DIR$/src/app/core/models" />
+      <recent name="$PROJECT_DIR$/src/app/core/services" />
+      <recent name="$PROJECT_DIR$/src/app/pages/appointments/components" />
+      <recent name="$PROJECT_DIR$/src/app/components" />
+    </key>
+  </component>
+  <component name="RunManager" selected="npm.Angular CLI Server">
+    <configuration name="Angular Application" type="JavascriptDebugType" uri="http://localhost:4200">
+      <method v="2" />
+    </configuration>
+    <configuration name="Angular CLI Server" type="js.build_tools.npm">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="start" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <configuration name="ng" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="ng" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="npm.ng" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-4abd2a77f808-JavaScript-WS-262.10315.144" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="26eccfc7-03a3-4a19-a2b6-b6661f86de61" name="Changes" comment="" />
+      <created>1793191330250</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1793191330250</updated>
+      <workItem from="1793191331330" duration="66549000" />
+      <workItem from="1793545922575" duration="15582000" />
+      <workItem from="1793636501716" duration="10254000" />
+      <workItem from="1793699630809" duration="13395000" />
+      <workItem from="1793739014791" duration="7000" />
+      <workItem from="1793802769067" duration="5780000" />
+      <workItem from="1794049619640" duration="54418000" />
+      <workItem from="1794251903242" duration="5187000" />
+      <workItem from="1794299901507" duration="11213000" />
+      <workItem from="1794404848767" duration="14771000" />
+      <workItem from="1794670555137" duration="13137000" />
+      <workItem from="1794757172295" duration="180000" />
+    </task>
+    <task id="LOCAL-00001" summary="remove backend connection">
+      <option name="closed" value="true" />
+      <created>1793858508179</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1793858508179</updated>
+    </task>
+    <task id="LOCAL-00002" summary="remove backend connection">
+      <option name="closed" value="true" />
+      <created>1793858522488</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1793858522488</updated>
+    </task>
+    <task id="LOCAL-00003" summary="add static data">
+      <option name="closed" value="true" />
+      <created>1793858546334</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1793858546334</updated>
+    </task>
+    <task id="LOCAL-00004" summary="remove test generation">
+      <option name="closed" value="true" />
+      <created>1793858699694</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1793858699694</updated>
+    </task>
+    <task id="LOCAL-00005" summary="remove tests from project">
+      <option name="closed" value="true" />
+      <created>1793858745207</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1793858745207</updated>
+    </task>
+    <task id="LOCAL-00006" summary="implement downloading">
+      <option name="closed" value="true" />
+      <created>1794405227263</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1794405227263</updated>
+    </task>
+    <task id="LOCAL-00007" summary="fix logo">
+      <option name="closed" value="true" />
+      <created>1794569864505</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1794569864505</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="remove backend connection" />
+    <MESSAGE value="add static data" />
+    <MESSAGE value="remove test generation" />
+    <MESSAGE value="remove tests from project" />
+    <MESSAGE value="implement downloading" />
+    <MESSAGE value="fix logo" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix logo" />
+  </component>
+</project>

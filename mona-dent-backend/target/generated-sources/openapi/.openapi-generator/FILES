@@ -1,0 +1,6 @@
+README.md
+pom.xml
+src/main/java/com/monadent/contracts/ipaddresses/CreateIpAddressRequest.java
+src/main/java/com/monadent/contracts/ipaddresses/IpAddressResponse.java
+src/main/java/com/monadent/contracts/ipaddresses/UpdateIpAddressRequest.java
+src/main/java/org/openapitools/api/ApiUtil.java

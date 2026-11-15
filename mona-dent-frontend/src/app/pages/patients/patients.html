@@ -1,0 +1,240 @@
+@if (isPatientOpen) {
+  <app-patient-form
+    [patient]="patientBeingEdited()"
+    (close)="closePatientPopup()"
+    (created)="onPatientCreated($event)"
+    (updated)="onPatientUpdated($event)"
+  />
+}
+
+<section class="flex flex-wrap items-center justify-between gap-3">
+  <app-page-header [page]="'PATIENTS' | translate" [title]="'Patients' | translate" [note]="'Manage patient records.' | translate" />
+
+  <div class="flex flex-wrap gap-2 items-center sm:gap-3">
+    <app-button
+      variant="basic"
+      [disabled]="isImporting()"
+      title="Restores patient and clinical records from Mona Dent JSON exports. File contents are not included in the export."
+      (click)="patientImportInput.click()"
+    >
+      <svg lucideUpload class="size-5"></svg>
+      {{ (isImporting() ? 'Importing...' : 'Import Patients') | translate }}
+    </app-button>
+    <input #patientImportInput class="hidden" type="file" accept="application/json,.json" [disabled]="isImporting()" (change)="importPatients($event)" />
+    <app-button variant="basic" [disabled]="isExporting() || patients().length === 0" (click)="exportAllPatients()">
+      <svg lucideDownload class="size-5"></svg>
+      {{ 'Export All' | translate }}
+    </app-button>
+    <app-button variant="basic" [disabled]="isExporting() || selectedPatientIds().size === 0" (click)="exportSelectedPatients()">
+      <svg lucideDownload class="size-5"></svg>
+      {{ 'Export selected' | translate }} ({{ selectedPatientIds().size }})
+    </app-button>
+    <app-button (click)="openPatientPopup()">
+      <svg lucidePlus class="size-5"></svg>
+      {{ 'Add Patient' | translate }}
+    </app-button>
+  </div>
+</section>
+
+@if (exportError()) {
+  <p class="mt-3 text-sm text-error" role="alert">{{ exportError() }}</p>
+}
+@if (importResult(); as result) {
+  <p class="mt-3 text-sm text-success" role="status">
+    {{ 'Patient import complete.' | translate }}
+    {{ 'New profiles:' | translate }} {{ result.profilesCreated }} ·
+    {{ 'Existing profiles reused:' | translate }} {{ result.profilesReused }} ·
+    {{ 'Appointments:' | translate }} {{ result.appointments }} ·
+    {{ 'Visits:' | translate }} {{ result.visits }} ·
+    {{ 'Teeth restored:' | translate }} {{ result.teeth }} ·
+    {{ 'History events:' | translate }} {{ result.historyEvents }}
+    @if (result.filesNotRestored > 0) {
+      · {{ 'Files not restored (export contains metadata only):' | translate }} {{ result.filesNotRestored }}
+    }
+  </p>
+}
+@if (importError()) {
+  <p class="mt-3 text-sm text-error" role="alert">{{ importError() | translate }}</p>
+}
+
+<app-container classes="mt-5">
+  <app-searchbar
+    [placeholder]="'Search patients by name or phone...' | translate"
+    width="w-full sm:w-1/2"
+    [value]="searchTerm()"
+    (searchChange)="searchPatients($event)"
+  />
+
+  <div class="mt-5 hidden overflow-x-auto sm:block">
+  <table class="min-w-[760px] text-left w-full">
+    <thead>
+      <tr class="text-secondary text-[10px]">
+        <th>
+          <input type="checkbox" [checked]="allFilteredPatientsSelected()"
+            [attr.aria-label]="'Select all filtered patients' | translate"
+            (click)="$event.stopPropagation()" (change)="toggleAllFilteredPatients($event)" />
+        </th>
+        <th>{{ 'Patient' | translate }}</th>
+        <th>{{ 'Contact' | translate }}</th>
+        <th>{{ 'Last Visit' | translate }}</th>
+        <th>{{ 'Next Appointment' | translate }}</th>
+        <th></th>
+      </tr>
+    </thead>
+
+    <tbody>
+      @if (isLoading()) {
+        <tr>
+          <td colspan="6" class="py-6 text-center text-sm text-secondary">{{ 'Loading patients...' | translate }}</td>
+        </tr>
+      } @else if (loadError()) {
+        <tr>
+          <td colspan="6" class="py-6 text-center text-sm text-error">{{ loadError() }}</td>
+        </tr>
+      } @else {
+        @for (patient of filteredPatients(); track patient.patientId) {
+          <tr
+            [routerLink]="['/patients', patient.patientId]"
+            class="group cursor-pointer border-t border-border transition hover:bg-accent-bg *:py-2"
+          >
+            <td>
+              <input type="checkbox" [checked]="isPatientSelected(patient.patientId)"
+                [attr.aria-label]="'Select patient' | translate"
+                (click)="$event.stopPropagation()" (change)="togglePatientSelection(patient.patientId, $event)" />
+            </td>
+
+            <td>
+              <div class="flex items-center gap-2">
+                <div
+                  class="flex size-10 items-center justify-center rounded-full bg-accent-bg text-accent transition group-hover:bg-accent-bg-hover"
+                >
+                  {{ getInitials(patient) }}
+                </div>
+
+                <span class="transition group-hover:text-accent">
+                  {{ patient.name }} {{ patient.surname }}
+                </span>
+              </div>
+            </td>
+
+            <td>
+              <span class="text-sm">
+                {{ patient.phone || ('No phone' | translate) }}
+              </span>
+            </td>
+
+            <td class="text-sm text-secondary">
+              @if (summaryForPatient(patient.patientId); as summary) {
+                @if (summary.isLoading) {
+                  <span>{{ 'Loading...' | translate }}</span>
+                } @else if (summary.lastVisitError) {
+                  <span class="text-error">{{ summary.lastVisitError }}</span>
+                } @else if (summary.lastVisit) {
+                  {{ summary.lastVisit.visitDate | localizedDate: 'd MMM yyyy' }}
+                } @else {
+                  —
+                }
+              } @else {
+                <span>{{ 'Loading...' | translate }}</span>
+              }
+            </td>
+
+            <td>
+              @if (summaryForPatient(patient.patientId); as summary) {
+                @if (summary.isLoading) {
+                  <span class="text-xs text-secondary">{{ 'Loading...' | translate }}</span>
+                } @else if (summary.nextAppointmentError) {
+                  <span class="text-xs text-error">
+                    {{ summary.nextAppointmentError }}
+                  </span>
+                } @else if (summary.nextAppointment) {
+                  <span class="rounded-full bg-accent-bg px-3 py-2 text-xs text-accent">
+                    {{ summary.nextAppointment.appointmentDate | localizedDate: 'd MMM yyyy' }}
+                  </span>
+                } @else {
+                  <span class="rounded-full bg-accent-bg p-2 text-xs text-accent">—</span>
+                }
+              } @else {
+                <span class="text-xs text-secondary">{{ 'Loading...' | translate }}</span>
+              }
+            </td>
+
+            <td (click)="$event.stopPropagation()">
+              <div class="flex items-center gap-2">
+                <app-button variant="basic" [disabled]="isExporting()" (click)="exportPatient(patient)">
+                  <svg lucideDownload class="size-5"></svg>
+                </app-button>
+                <app-button variant="basic" (click)="openEditPatient(patient)">
+                  <svg lucidePencil class="size-4"></svg>
+                  {{ 'Edit' | translate }}
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="py-6 text-center text-sm text-secondary">{{ 'No patients found.' | translate }}</td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+  </div>
+
+  <div class="mt-4 space-y-3 sm:hidden">
+    @if (isLoading()) {
+      <p class="py-6 text-center text-sm text-secondary">{{ 'Loading patients...' | translate }}</p>
+    } @else if (loadError()) {
+      <p class="py-6 text-center text-sm text-error">{{ loadError() }}</p>
+    } @else {
+      @for (patient of filteredPatients(); track patient.patientId) {
+        <article class="rounded-xl border border-border bg-white p-3">
+          <div class="flex min-w-0 items-center gap-3">
+            <input type="checkbox" [checked]="isPatientSelected(patient.patientId)"
+              [attr.aria-label]="'Select patient' | translate"
+              (click)="$event.stopPropagation()" (change)="togglePatientSelection(patient.patientId, $event)" />
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-bg text-accent">
+              {{ getInitials(patient) }}
+            </span>
+            <div class="min-w-0 flex-1">
+              <a [routerLink]="['/patients', patient.patientId]" class="block truncate text-sm font-semibold">{{ patient.name }} {{ patient.surname }}</a>
+              <p class="mt-1 truncate text-xs text-secondary">{{ patient.phone || ('No phone' | translate) }}</p>
+            </div>
+            <app-button variant="basic" (click)="openEditPatient(patient)">
+              <svg lucidePencil class="size-4"></svg>
+              {{ 'Edit' | translate }}
+            </app-button>
+          </div>
+          <div class="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3 text-xs">
+            <div>
+              <p class="text-secondary">{{ 'Last Visit' | translate }}</p>
+              @if (summaryForPatient(patient.patientId); as summary) {
+                @if (summary.isLoading) {
+                  <p class="mt-1">{{ 'Loading...' | translate }}</p>
+                } @else if (summary.lastVisitError) {
+                  <p class="mt-1 text-error">{{ summary.lastVisitError }}</p>
+                } @else {
+                  <p class="mt-1">{{ summary.lastVisit?.visitDate ? (summary.lastVisit?.visitDate | localizedDate: 'd MMM yyyy') : '—' }}</p>
+                }
+              }
+            </div>
+            <div>
+              <p class="text-secondary">{{ 'Next Appointment' | translate }}</p>
+              @if (summaryForPatient(patient.patientId); as summary) {
+                @if (summary.isLoading) {
+                  <p class="mt-1">{{ 'Loading...' | translate }}</p>
+                } @else if (summary.nextAppointmentError) {
+                  <p class="mt-1 text-error">{{ summary.nextAppointmentError }}</p>
+                } @else {
+                  <p class="mt-1">{{ summary.nextAppointment?.appointmentDate ? (summary.nextAppointment?.appointmentDate | localizedDate: 'd MMM yyyy') : '—' }}</p>
+                }
+              }
+            </div>
+          </div>
+        </article>
+      } @empty {
+        <p class="py-6 text-center text-sm text-secondary">{{ 'No patients found.' | translate }}</p>
+      }
+    }
+  </div>
+</app-container>

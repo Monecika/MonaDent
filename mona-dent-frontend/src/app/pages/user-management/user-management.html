@@ -1,0 +1,128 @@
+@if (isOpen) {
+  <app-user-form
+    [user]="selectedUser"
+    (close)="closeUserPopup()"
+    (saved)="onUserSaved()"
+  />
+}
+
+<section class="flex flex-wrap items-center justify-between gap-3">
+  <app-page-header
+    [title]="'ADMINISTRATION' | translate"
+    [page]="'User management' | translate"
+    [note]="'Control access and team permissions.' | translate"
+  />
+
+  <app-button (click)="openUserPopup()">
+    <svg lucideUserRoundPlus class="size-5"></svg>
+    {{ 'Add User' | translate }}
+  </app-button>
+</section>
+
+<app-container classes="mt-5">
+  @if (errorMessage()) {
+    <p class="mb-3 text-sm text-error" role="alert">{{ errorMessage() }}</p>
+  }
+
+  <div class="hidden overflow-x-auto sm:block">
+  <table class="w-full min-w-[680px] text-left">
+    <thead>
+    <tr class="text-secondary text-xs *:pb-2">
+      <th>{{ 'User' | translate }}</th>
+      <th>{{ 'Job Title' | translate }}</th>
+      <th>{{ 'Access Role' | translate }}</th>
+      <th>{{ 'Status' | translate }}</th>
+      <th></th>
+    </tr>
+    </thead>
+
+    <tbody>
+      @for (user of users(); track user.userId) {
+        <tr class="border-t border-border *:py-2">
+            <td>
+              <div class="flex items-center gap-2">
+                <div
+                  class="flex size-10 items-center justify-center rounded-full bg-accent-bg text-accent"
+                >
+                  {{ getInitials(user) }}
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <span class="text-sm font-medium">
+                    {{ user.name }} {{ user.surname }}
+                  </span>
+                  <span class="text-xs text-secondary">
+                    {{ user.email }}
+                  </span>
+                </div>
+              </div>
+            </td>
+
+            <td class="text-xs text-secondary">
+              {{ user.role === 'ADMIN' ? ('Clinic Administrator' | translate) : (user.role | translate) }}
+            </td>
+
+            <td class="text-accent text-sm">
+              <span class="rounded-full bg-accent-bg p-2">
+                {{ user.role | translate }}
+              </span>
+            </td>
+
+            <td>
+              <div class="flex items-center gap-2">
+                <div
+                  class="size-2 rounded-full"
+                  [class.bg-success]="user.status === 'ACTIVE'"
+                  [class.bg-error]="user.status === 'INACTIVE'"
+                ></div>
+
+                <span
+                  [class.text-success]="user.status === 'ACTIVE'"
+                  [class.text-error]="user.status === 'INACTIVE'"
+                >
+                  {{ (user.status === 'ACTIVE' ? 'Active' : 'Inactive') | translate }}
+                </span>
+              </div>
+            </td>
+
+            <td>
+              <app-button variant="basic" (click)="editUser(user)">
+                <svg lucidePencil class="size-5"></svg>
+              </app-button>
+            </td>
+        </tr>
+      } @empty {
+        @if (!errorMessage()) {
+          <tr>
+            <td colspan="5" class="py-6 text-center text-sm text-secondary">
+              {{ 'No users found.' | translate }}
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+  </div>
+
+  <div class="space-y-3 sm:hidden">
+    @for (user of users(); track user.userId) {
+      <article class="flex items-center gap-3 rounded-xl border border-border p-3">
+        <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-bg text-sm text-accent">
+          {{ getInitials(user) }}
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium">{{ user.name }} {{ user.surname }}</p>
+          <p class="truncate text-xs text-secondary">{{ user.email }}</p>
+          <p class="mt-1 text-xs text-secondary">{{ user.role === 'ADMIN' ? ('Clinic Administrator' | translate) : (user.role | translate) }} · {{ (user.status === 'ACTIVE' ? 'Active' : 'Inactive') | translate }}</p>
+        </div>
+        <app-button variant="basic" (click)="editUser(user)">
+          <svg lucidePencil class="size-5"></svg>
+        </app-button>
+      </article>
+    } @empty {
+      @if (!errorMessage()) {
+        <p class="py-6 text-center text-sm text-secondary">{{ 'No users found.' | translate }}</p>
+      }
+    }
+  </div>
+</app-container>

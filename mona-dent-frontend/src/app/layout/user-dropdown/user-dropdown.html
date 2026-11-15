@@ -1,0 +1,57 @@
+@if (isLoading()) {
+  <app-loader />
+}
+
+<div class="relative">
+  <button
+    class="rounded-xl flex justify-between items-center w-full cursor-pointer transition group hover:bg-accent-bg"
+    (click)="openUser()"
+  >
+    <div class="flex min-w-0 items-center gap-2">
+      <p
+        class="rounded-full text-accent p-2 sm:p-3 bg-accent-bg transition group-hover:bg-accent-bg-hover">{{ userInitials() }}</p>
+      <div class="min-w-0 text-left">
+        <p class="truncate text-primary text-xs font-bold">{{ userFullName() }}</p>
+        <p class="text-secondary text-[10px] capitalize">{{ (user()?.role ?? '') | translate }}</p>
+      </div>
+    </div>
+    <svg lucideChevronDown
+         class="hidden text-primary size-5 transition duration-300 sm:block"
+         [class]="isOpen ? 'rotate-180' : 'rotate-0'"
+         [class.rotate-180]="isOpen"
+         [class.transition-all]="isOpen"
+    />
+  </button>
+
+  @if (isOpen) {
+    <div class="absolute p-2 border border-border rounded-xl w-full mt-2 bg-white">
+      <button
+        type="button"
+        routerLink="/account"
+        (click)="closeMenu()"
+        class="group flex w-full cursor-pointer items-center gap-2 rounded-xl p-2 hover:bg-accent-bg"
+      >
+        <svg
+          lucideSettings
+          class="size-5 text-secondary group-hover:text-accent"
+        />
+
+        <p class="text-secondary text-xs">{{ 'Account Settings' | translate }}</p>
+      </button>
+
+      <button
+        type="button"
+        routerLink="/login"
+        (click)="signOut()"
+        class="group flex w-full cursor-pointer items-center gap-2 rounded-xl p-2 hover:bg-accent-bg"
+      >
+        <svg
+          lucideLogOut
+          class="size-5 text-secondary group-hover:text-accent"
+        />
+
+        <p class="text-secondary text-xs">{{ 'Sign out' | translate }}</p>
+      </button>
+    </div>
+  }
+</div>

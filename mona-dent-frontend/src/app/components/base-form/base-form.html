@@ -1,0 +1,23 @@
+<app-popup (close)="closeForm()">
+  <div class="w-full max-w-xl">
+    <h3 class="mt-5 text-xl font-medium">{{ formTitle() }}</h3>
+    <form
+      class="mt-5 grid grid-cols-1 gap-x-1 gap-y-3 sm:grid-cols-2 *:flex *:flex-col *:gap-1"
+      autocomplete="off"
+      (submit)="submitForm($event)"
+    >
+
+      <ng-content />
+
+      <div class="col-span-full grid! grid-cols-2! items-center gap-2 w-full">
+        <div class="flex flex-col gap-1">
+          <ng-content select=".form-actions-left" />
+        </div>
+        <div class="flex flex-row justify-end gap-2">
+          <app-button variant="secondary" (click)="closeForm()">{{ 'Cancel' | translate }}</app-button>
+          <app-button type="submit" [disabled]="submitDisabled()">{{ submitButton() | translate }}</app-button>
+        </div>
+      </div>
+    </form>
+  </div>
+</app-popup>

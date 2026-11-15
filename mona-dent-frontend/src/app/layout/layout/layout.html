@@ -1,0 +1,43 @@
+<div class="flex min-h-screen flex-col lg:flex-row">
+  <header class="flex items-center justify-between border-b border-border px-4 py-3 lg:hidden">
+    <div class="flex min-w-0 items-center gap-2">
+      <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-sm font-bold text-white">M</span>
+      <span class="truncate font-semibold text-accent">Monecify <span class="rounded-md bg-background px-2 py-1 text-secondary">Dent</span></span>
+    </div>
+    <button
+      type="button"
+      class="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border text-primary"
+      [attr.aria-label]="(mobileNavOpen() ? 'Close navigation' : 'Open navigation') | translate"
+      [attr.aria-expanded]="mobileNavOpen()"
+      (click)="mobileNavOpen.set(!mobileNavOpen())"
+    >
+      @if (mobileNavOpen()) {
+        <svg lucideX class="size-5"></svg>
+      } @else {
+        <svg lucideMenu class="size-5"></svg>
+      }
+    </button>
+  </header>
+
+  <app-aside
+    class="w-full shrink-0 lg:static lg:w-60 lg:shadow-none"
+    [class.fixed]="mobileNavOpen()"
+    [class.left-0]="mobileNavOpen()"
+    [class.right-0]="mobileNavOpen()"
+    [class.top-16]="mobileNavOpen()"
+    [class.z-50]="mobileNavOpen()"
+    [class.shadow-lg]="mobileNavOpen()"
+    [mobileOpen]="mobileNavOpen()"
+    (navigationSelected)="mobileNavOpen.set(false)"
+  />
+
+  <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+    <app-navbar />
+
+    <main class="min-w-0 flex-1 bg-background p-3 sm:p-4 lg:p-5">
+      <router-outlet />
+    </main>
+
+    <app-footer />
+  </div>
+</div>

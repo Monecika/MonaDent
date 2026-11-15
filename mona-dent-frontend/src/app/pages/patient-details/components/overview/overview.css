@@ -1,0 +1,177 @@
+.tooth-cell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 8px;
+  padding: 4px 2px;
+  color: var(--color-secondary);
+  font-size: 9px;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.tooth-cell:hover {
+  background-color: rgb(255 255 255 / 70%);
+}
+
+.tooth-midline {
+  margin-left: 12px;
+}
+
+.tooth-number {
+  color: #88774e;
+  font-weight: 600;
+}
+
+.tooth-shape {
+  --tooth-width: 1;
+  width: 100%;
+  max-width: 36px;
+  height: 48px;
+  fill: var(--color-success);
+  stroke: color-mix(in srgb, var(--color-success) 70%, #17213b);
+  stroke-width: 1.5;
+  transform: scaleX(var(--tooth-width));
+  filter: drop-shadow(0 1px 1px rgb(75 60 30 / 12%));
+}
+
+.tooth-shape path {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tooth-groove {
+  fill: none;
+  stroke: #d6c9a8;
+  stroke-width: 1.5;
+}
+
+.tooth-crown-overlay {
+  fill: #e0f2fe;
+  stroke: #2563eb !important;
+  stroke-width: 2.25;
+}
+
+.tooth-caries-mark { fill: #b91c1c; stroke: #fff; stroke-width: 1.4; }
+.tooth-filling-mark { fill: #f8fafc; stroke: #475569; stroke-width: 1.5; }
+.tooth-gum-mark { fill: none; stroke: #f97316; stroke-width: 3; stroke-linecap: round; }
+.tooth-pulp-mark { fill: #f59e0b; stroke: #7c2d12; stroke-width: 1.4; }
+.tooth-diagnosis-mark { fill: #9f1239; stroke: white; stroke-width: 0.35px; paint-order: stroke; font: 700 5px Arial, sans-serif; }
+
+.tooth-molar {
+  --tooth-width: 1.05;
+}
+
+.tooth-premolar {
+  --tooth-width: 0.9;
+}
+
+.tooth-canine {
+  --tooth-width: 0.75;
+}
+
+.tooth-incisor {
+  --tooth-width: 0.68;
+}
+
+.tooth-shape-upper {
+  transform: rotate(180deg) scaleX(var(--tooth-width));
+}
+
+.tooth-not-assessed .tooth-shape {
+  fill: #f8f6ee;
+  stroke: #aa9566;
+}
+
+.tooth-selected {
+  background: white;
+  box-shadow:
+    0 0 0 2px var(--color-accent),
+    0 1px 2px rgb(15 23 42 / 10%);
+}
+
+.tooth-implant .tooth-shape {
+  fill: var(--color-accent-bg);
+  stroke: var(--color-secondary);
+}
+
+.tooth-missing {
+  color: var(--color-secondary);
+}
+
+.tooth-missing .tooth-caption {
+  color: var(--color-secondary);
+  font-weight: 600;
+}
+
+.tooth-missing-icon {
+  width: 28px;
+  height: 28px;
+  margin: 8px 0;
+  color: var(--color-secondary);
+}
+
+.tooth-implant-mark {
+  position: absolute;
+  top: 35%;
+  width: 11px;
+  height: 18px;
+  color: #0284c7;
+}
+
+.tooth-implant-mark svg {
+  width: 100%;
+  height: 100%;
+  fill: #e0f2fe;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.tooth-mobility-mark {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  display: grid;
+  min-width: 15px;
+  height: 15px;
+  place-items: center;
+  border: 1px solid #92400e;
+  border-radius: 50%;
+  background: #fef3c7;
+  color: #78350f;
+  font-size: 7px;
+  font-weight: 800;
+}
+
+.tooth-caption {
+  min-height: 20px;
+  text-align: center;
+  font-size: 8px;
+  line-height: 12px;
+}
+
+.tooth-problem .tooth-caption {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.tooth-has-filling .tooth-caption {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.tooth-problem.tooth-has-filling .tooth-caption {
+  color: var(--color-error);
+}
+
+.tooth-implant .tooth-caption {
+  color: var(--color-accent);
+  font-weight: 600;
+}

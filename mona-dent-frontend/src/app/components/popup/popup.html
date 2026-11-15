@@ -1,0 +1,14 @@
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 sm:p-5"
+>
+  <app-container classes="">
+    <div class="w-full flex justify-between items-center">
+      <span class="justify-self-start uppercase text-xs text-accent font-medium">Monecify dent</span>
+      <app-button variant="basic" (click)="closePopup()">
+        <svg lucideX class="size-5 justify-self-end"></svg>
+      </app-button>
+    </div>
+
+    <ng-content />
+  </app-container>
+</div>

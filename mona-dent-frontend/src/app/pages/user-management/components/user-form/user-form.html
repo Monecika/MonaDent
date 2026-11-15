@@ -1,0 +1,113 @@
+<app-base-form
+  (close)="closeForm()"
+  (submit)="submitForm()"
+  [formTitle]="(isEditing ? 'Edit User' : 'New User') | translate"
+  [submitButton]="(isSubmitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Create User') | translate"
+>
+  <ng-container [formGroup]="form">
+    <div>
+      <label for="user-name">{{ 'Name' | translate }}</label>
+      <input
+        id="user-name"
+        type="text"
+        formControlName="name"
+      >
+    </div>
+
+    <div>
+      <label for="user-surname">{{ 'Surname' | translate }}</label>
+      <input
+        id="user-surname"
+        type="text"
+        formControlName="surname"
+      >
+    </div>
+
+    <div>
+      <label for="user-phone">{{ 'Phone' | translate }}</label>
+      <input
+        id="user-phone"
+        type="tel"
+        formControlName="phone"
+      >
+    </div>
+
+    <div>
+      <label for="user-email">{{ 'Email' | translate }}</label>
+      <input
+        id="user-email"
+        type="email"
+        formControlName="email"
+      >
+    </div>
+
+    <div>
+      <label>{{ 'Date of birth' | translate }}</label>
+      <app-custom-calendar
+        [value]="form.controls.dateOfBirth.value"
+        [placeholder]="'Select date of birth' | translate"
+        (dateSelected)="onDateOfBirthChange($event)"
+      />
+    </div>
+
+    <div>
+      <label>{{ 'Role' | translate }}</label>
+      <app-custom-select-input
+        [options]="roleOptions"
+        [value]="form.controls.role.value"
+        [placeholder]="'Select a role' | translate"
+        (valueChange)="form.controls.role.setValue($event)"
+      />
+    </div>
+
+    <div>
+      <label>{{ 'Status' | translate }}</label>
+      <app-custom-select-input
+        [options]="statusOptions"
+        [value]="form.controls.status.value"
+        [placeholder]="'Select a status' | translate"
+        (valueChange)="onStatusChange($event)"
+      />
+    </div>
+
+    <fieldset class="col-span-full">
+      <legend>{{ 'Branches' | translate }}</legend>
+
+      @if (branches().length) {
+        <div class="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          @for (branch of branches(); track branch.branchId) {
+            <label class="flex flex-row! items-center gap-2">
+              <input
+                type="checkbox"
+                [checked]="form.controls.branchIds.value.includes(branch.branchId)"
+                (change)="onBranchChange(branch.branchId, $event)"
+              >
+              {{ branch.name }}
+            </label>
+          }
+        </div>
+      } @else {
+        <p class="mt-1 text-sm text-secondary">
+          {{ 'No branches available.' | translate }}
+        </p>
+      }
+    </fieldset>
+
+    @if (!isEditing) {
+      <div class="col-span-full">
+        <label for="user-password">{{ 'Temporary password' | translate }}</label>
+        <input
+          id="user-password"
+          type="password"
+          formControlName="password"
+        >
+      </div>
+    }
+
+    @if (errorMessage()) {
+      <p class="col-span-full rounded-lg bg-error-bg p-3 text-sm text-error" role="alert" aria-live="assertive">
+        {{ errorMessage() | translate }}
+      </p>
+    }
+  </ng-container>
+</app-base-form>

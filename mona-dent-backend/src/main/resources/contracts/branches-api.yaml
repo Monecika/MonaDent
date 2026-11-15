@@ -1,0 +1,194 @@
+openapi: 3.0.3
+info:
+  title: Mona Dent Branches API
+  version: 1.0.0
+paths:
+  /branches:
+    get:
+      tags:
+        - Branches
+      operationId: getAllBranches
+      summary: Get all branches (administrators only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Branches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BranchResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Branches
+      operationId: createBranch
+      summary: Create a branch (administrators only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBranchRequest'
+      responses:
+        '201':
+          description: Branch created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /branches/assigned:
+    get:
+      tags:
+        - Branches
+      operationId: getAssignedBranches
+      summary: Get branches assigned to the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Assigned branches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BranchResponse'
+  /branches/{branchId}:
+    put:
+      tags:
+        - Branches
+      operationId: updateBranch
+      summary: Update a branch (administrators only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: branchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBranchRequest'
+      responses:
+        '200':
+          description: Branch updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Branches
+      operationId: deleteBranch
+      summary: Delete an unused branch (administrators only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: branchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Branch deleted
+        '403':
+          description: Insufficient permissions
+        '404':
+          description: Branch not found
+        '409':
+          description: Branch has appointments or visits
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - errorType
+        - message
+      properties:
+        status:
+          type: integer
+          format: int32
+        errorType:
+          type: string
+        message:
+          type: string
+    CreateBranchRequest:
+      type: object
+      required:
+        - name
+        - address
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+    UpdateBranchRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+    BranchResponse:
+      type: object
+      required:
+        - branchId
+        - name
+        - address
+      properties:
+        branchId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        address:
+          type: string

@@ -1,0 +1,122 @@
+<div class="relative" [class.w-full]="!fitContent()" [class.w-fit]="fitContent()" [class.max-w-full]="fitContent()">
+  <button
+    type="button"
+    class="flex min-w-0 gap-2 justify-between cursor-pointer items-center rounded-lg
+    border border-border px-3 py-2.5 text-sm transition hover:border-border-hover
+    hover:bg-background focus:outline-none focus:ring-2 focus:ring-accent/20"
+    [class.w-full]="!fitContent()"
+    [class.w-fit]="fitContent()"
+    [class.max-w-full]="fitContent()"
+    (click)="toggleCalendar()"
+  >
+    <span class="flex min-w-0 flex-1 items-center gap-2">
+      <svg lucideCalendarDays class="size-4 shrink-0 text-secondary"></svg>
+      @if (placeholder() && !hasSelectedValue) {
+        <span class="truncate text-secondary">{{ placeholder() }}</span>
+      } @else if (selectWeek()) {
+        <span class="whitespace-nowrap">{{ selectedWeekStart | localizedDate: 'dd MMM' }} – {{ selectedWeekEnd | localizedDate: 'dd MMM yyyy' }}</span>
+      } @else {
+        <span class="truncate">{{ selectedDate() | localizedDate: 'dd MMM yyyy' }}</span>
+      }
+    </span>
+
+    <svg
+      lucideChevronDown
+      class="size-4 shrink-0 text-secondary transition-transform"
+      [class.rotate-180]="isOpen"
+    ></svg>
+  </button>
+
+  @if (isOpen) {
+    <div
+      class="absolute left-0 top-full z-50 mt-2 rounded-xl border border-border bg-white p-4"
+    >
+      <div class="mb-4 flex items-center justify-between">
+        <button
+          type="button"
+          class="flex size-8 cursor-pointer items-center justify-center rounded-lg transition hover:bg-background"
+          (click)="changeMonth(-1)"
+        >
+          <svg lucideChevronLeft class="size-4"></svg>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <app-custom-select-input
+            [options]="monthOptions"
+            [value]="selectedMonth"
+            [widePanel]="true"
+            (selectionChange)="onMonthChange($event.value)"
+          />
+
+          <app-custom-select-input
+            [options]="yearOptions"
+            [value]="selectedYear"
+            [widePanel]="true"
+            (selectionChange)="onYearChange($event.value)"
+          />
+        </div>
+
+        <button
+          type="button"
+          class="flex size-8 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-background"
+          (click)="changeMonth(1)"
+        >
+          <svg lucideChevronRight class="size-4"></svg>
+        </button>
+      </div>
+
+      <div class="mb-2 grid grid-cols-7 text-center text-xs text-secondary">
+        @for (day of weekdays; track $index) {
+          <div class="py-2">{{ day }}</div>
+        }
+      </div>
+
+      <div class="grid grid-cols-7">
+        @for (day of calendarDays; track day.date.toISOString()) {
+          <button
+            type="button"
+            class="flex aspect-square cursor-pointer items-center justify-center text-sm transition hover:bg-accent/10"
+            [class.rounded-lg]="!selectWeek() || !day.isCurrentWeek"
+            [class]="selectWeek() && day.isCurrentWeek ? 'bg-accent/10' : '' "
+            [class.rounded-l-lg]="selectWeek() && day.isWeekStart"
+            [class.rounded-r-lg]="selectWeek() && day.isWeekEnd"
+            [class.text-secondary]="!day.inCurrentMonth"
+            [class.opacity-40]="!day.inCurrentMonth"
+            (click)="selectDay(day.date)"
+          >
+          <span
+            class="flex size-8 items-center justify-center rounded-full transition"
+            [class.bg-accent]="day.isSelected && !selectWeek()"
+            [class.text-white]="day.isSelected && !selectWeek()"
+            [class.font-semibold]="day.isSelected && !selectWeek()"
+            [class.ring-2]="day.isToday && (!day.isSelected || selectWeek())"
+            [class.ring-accent]="day.isToday && (!day.isSelected || selectWeek())"
+          >
+              {{ day.day }}
+            </span>
+          </button>
+        }
+      </div>
+
+      <div class="mt-4 flex justify-between border-t border-border pt-3">
+        <button
+          type="button"
+          class="cursor-pointer rounded-lg px-3 py-2 text-sm text-secondary
+          transition-colors hover:bg-background hover:text-primary"
+          (click)="selectDay(today)"
+        >
+          {{ 'Today' | translate }}
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer rounded-lg px-3 py-2 text-sm text-secondary
+          transition-colors hover:bg-background hover:text-primary"
+          (click)="isOpen = false"
+        >
+          {{ 'Close' | translate }}
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,16 @@
+<div
+  class="flex gap-2 items-center bg-background border border-border rounded-lg py-1 px-2 transition hover:bg-white hover:border-border-hover"
+  [class]="width()"
+>
+  <svg lucideSearch class="size-5 text-secondary"></svg>
+
+  <input
+    type="text"
+    autocomplete="off"
+    class="w-full p-1 border-0!"
+    [placeholder]="placeholder()"
+    [value]="searchValue()"
+    (input)="onSearch($event)"
+    (keydown.enter)="onEnter()"
+  />
+</div>

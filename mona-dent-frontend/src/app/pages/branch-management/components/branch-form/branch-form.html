@@ -1,0 +1,32 @@
+<app-base-form
+  (close)="closeForm()"
+  (submit)="submitForm()"
+  [formTitle]="(isEditing ? 'Edit Branch' : 'New Branch') | translate"
+  [submitButton]="(isSubmitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Branch') | translate"
+>
+  <ng-container [formGroup]="form">
+    <div class="col-span-full">
+      <label for="branch-name">{{ 'Branch name' | translate }}</label>
+      <input
+        id="branch-name"
+        type="text"
+        formControlName="name"
+        autocomplete="off"
+      />
+    </div>
+
+    <div class="col-span-full">
+      <label for="branch-address">{{ 'Address' | translate }}</label>
+      <input
+        id="branch-address"
+        type="text"
+        formControlName="address"
+        autocomplete="off"
+      />
+    </div>
+  </ng-container>
+
+  @if (errorMessage) {
+    <p class="col-span-full text-sm text-error">{{ errorMessage | translate }}</p>
+  }
+</app-base-form>

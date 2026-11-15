@@ -1,0 +1,30 @@
+#!/bin/bash
+set -euo pipefail
+
+DATA_ROOT="/Library/Application Support/MonaDent"
+CONFIG="$DATA_ROOT/application.properties"
+PG_BIN="/Library/PostgreSQL/18/bin"
+SERVICE_PLIST="/Library/LaunchDaemons/com.monadent.app.plist"
+
+if [[ -f "$CONFIG" ]]; then
+  launchctl bootout system "$SERVICE_PLIST" >/dev/null 2>&1 || true
+  DB_PASSWORD="$(sed -n 's/^spring\.datasource\.password=//p' "$CONFIG" | head -n 1)"
+  if [[ -z "$DB_PASSWORD" || ! -x "$PG_BIN/pg_dump" ]]; then
+    echo 'Saved Mona Dent database settings or PostgreSQL tools are missing; refusing the upgrade.' >&2
+    exit 1
+  fi
+
+  mkdir -p "$DATA_ROOT/backups"
+  BACKUP="$DATA_ROOT/backups/clinic_db_$(date +%Y%m%d_%H%M%S).backup"
+  if ! PGPASSWORD="$DB_PASSWORD" "$PG_BIN/pg_dump" -h 127.0.0.1 -p 5432 -U mona_dent_app -d clinic_db -Fc -f "$BACKUP"; then
+    echo 'Database backup failed; refusing to apply the application upgrade.' >&2
+    /bin/launchctl bootstrap system "$SERVICE_PLIST" >/dev/null 2>&1 || true
+    exit 1
+  fi
+
+  if [[ -d "$DATA_ROOT/files" ]]; then
+    ditto "$DATA_ROOT/files" "$DATA_ROOT/backups/files_$(date +%Y%m%d_%H%M%S)"
+  fi
+fi
+
+exit 0

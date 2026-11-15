@@ -1,0 +1,50 @@
+<aside
+  class="border-b border-border bg-white p-3 lg:sticky lg:top-0 lg:block lg:h-screen lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:p-5"
+  [class.hidden]="!mobileOpen()"
+>
+  <section class="hidden items-center gap-2 lg:flex cursor-pointer" routerLink="/">
+    <p class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent font-bold text-white">
+      M
+    </p>
+    <div class="min-w-0">
+      <p class="whitespace-nowrap text-accent font-semibold">
+        Monecify <span class="py-1 px-2 bg-background text-secondary rounded-md">Dent</span>
+      </p>
+      <p class="text-xs text-secondary">{{ 'Dental practice system' | translate }}</p>
+    </div>
+  </section>
+
+  <section class="grid grid-cols-1 gap-3 lg:mt-10 lg:flex lg:flex-col lg:gap-3">
+    @for (aside of asideBar; track aside.section) {
+      <div class="flex min-w-0 flex-col gap-0.5">
+        <p class="text-[10px] text-secondary font-semibold tracking-widest">
+          {{ aside.section | translate }}
+        </p>
+
+        @for (page of aside.pages; track page.title) {
+          @if (canViewPage(page)) {
+            <a
+              class="flex min-w-0 items-center gap-2 rounded-md p-2 cursor-pointer group not-[.active]:hover:bg-background"
+              [routerLink]="page.route"
+              routerLinkActive="active bg-accent *:text-white"
+              [routerLinkActiveOptions]="{
+                paths: page.route === '/' ? 'exact' : 'subset',
+                queryParams: 'ignored',
+              }"
+              (click)="navigationSelected.emit()"
+            >
+              <span
+                class="flex items-center size-5 text-primary/80 group-not-[.active]:group-hover:text-accent"
+              >
+                <ng-container *ngComponentOutlet="page.icon" />
+              </span>
+              <p class="text-secondary group-not-[.active]:group-hover:text-accent">
+                {{ page.title | translate }}
+              </p>
+            </a>
+          }
+        }
+      </div>
+    }
+  </section>
+</aside>
