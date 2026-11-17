@@ -1,0 +1,27 @@
+# Dependency installs
+**/node_modules/
+
+# IDE and editor state
+.idea/
+**/.idea/
+*.iml
+.vscode/
+
+# Build output and tool caches
+**/target/
+**/dist/
+**/.angular/
+**/build/
+**/coverage/
+.cache/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS and temporary files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
