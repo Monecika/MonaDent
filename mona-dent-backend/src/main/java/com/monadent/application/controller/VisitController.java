@@ -1,5 +1,6 @@
 package com.monadent.application.controller;
 
+import com.monadent.application.events.PatientDataChangeNotifier;
 import com.monadent.application.port.VisitManagement;
 import com.monadent.contracts.visits.CreateVisitRequest;
 import com.monadent.contracts.visits.VisitResponse;
@@ -22,6 +23,7 @@ import java.util.UUID;
 @RequestMapping("/visits")
 public class VisitController {
     private final VisitManagement visitManagement;
+    private final PatientDataChangeNotifier patientDataChangeNotifier;
 
     @GetMapping("/patient/{patientId}")
     public ResponseEntity<List<VisitResponse>> getPatientVisits(@PathVariable UUID patientId) {
@@ -37,6 +39,8 @@ public class VisitController {
 
     @PostMapping
     public ResponseEntity<VisitResponse> createVisit(@Valid @RequestBody CreateVisitRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(visitManagement.createVisit(request));
+        VisitResponse visit = visitManagement.createVisit(request);
+        patientDataChangeNotifier.patientDataChanged();
+        return ResponseEntity.status(HttpStatus.CREATED).body(visit);
     }
 }

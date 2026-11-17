@@ -1,5 +1,6 @@
 package com.monadent.domain.service;
 
+import com.monadent.application.events.PatientDataChangeNotifier;
 import com.monadent.application.port.VisitManagement;
 import com.monadent.contracts.visits.CreateVisitRequest;
 import com.monadent.contracts.visits.VisitResponse;
@@ -36,6 +37,7 @@ public class VisitService implements VisitManagement {
     private final AppointmentJpaRepository appointmentJpaRepository;
     private final BranchUserLookup branchUserLookup;
     private final VisitMapper visitMapper;
+    private final PatientDataChangeNotifier patientDataChangeNotifier;
 
     @Override
     @Transactional(readOnly = true)
@@ -78,6 +80,9 @@ public class VisitService implements VisitManagement {
 
         completedVisits.forEach(visit -> visit.setStatus(VisitStatus.COMPLETED));
         visitJpaRepository.saveAll(completedVisits);
+        if (!completedVisits.isEmpty()) {
+            patientDataChangeNotifier.patientDataChanged();
+        }
     }
 
     private VisitStatus resolveVisitStatus(OffsetDateTime visitDate, int durationMinutes) {

@@ -1,7 +1,7 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { catchError, finalize, forkJoin, of } from 'rxjs';
+import { auditTime, catchError, finalize, forkJoin, of } from 'rxjs';
 import { PageHeader } from '../../components/page-header/page-header';
 import { Container } from '../../components/container/container';
 import { Searchbar } from '../../components/custom-inputs/searchbar/searchbar';
@@ -20,6 +20,7 @@ import { HttpErrorService } from '../../core/services/http-error-service';
 import { PatientDataExportEntry, PatientDataExportService } from '../../core/services/patient-data-export-service';
 import { PatientDataImportService } from '../../core/services/patient-data-import-service';
 import { PatientDataImportResult } from '../../core/services/patient-data-import-service';
+import { PatientLiveUpdatesService } from '../../core/services/patient-live-updates-service';
 
 interface PatientSummary {
   lastVisit: VisitResponse | null;
@@ -55,6 +56,7 @@ export class Patients implements OnInit {
   private appointmentService = inject(AppointmentService);
   private visitService = inject(VisitService);
   private destroyRef = inject(DestroyRef);
+  private readonly patientLiveUpdates = inject(PatientLiveUpdatesService);
   private readonly httpErrorService = inject(HttpErrorService);
   private readonly patientDataExportService = inject(PatientDataExportService);
   private readonly patientDataImportService = inject(PatientDataImportService);
@@ -91,12 +93,15 @@ export class Patients implements OnInit {
 
   ngOnInit(): void {
     this.loadPatients();
+    this.patientLiveUpdates.changes$
+      .pipe(auditTime(150), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadPatients());
   }
 
   private loadPatients(): void {
     this.patientService
       .getPatients()
-      .pipe(finalize(() => this.isLoading.set(false)))
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (patients: PatientResponse[]) => {
           this.loadError.set('');

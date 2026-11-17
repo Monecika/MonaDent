@@ -1,5 +1,6 @@
 package com.monadent.application.controller;
 
+import com.monadent.application.events.PatientDataChangeNotifier;
 import com.monadent.application.port.AppointmentManagement;
 import com.monadent.contracts.appointments.AppointmentResponse;
 import com.monadent.contracts.appointments.CreateAppointmentRequest;
@@ -28,6 +29,7 @@ import java.util.UUID;
 @RequestMapping("/appointments")
 public class AppointmentController {
     private final AppointmentManagement appointmentManagement;
+    private final PatientDataChangeNotifier patientDataChangeNotifier;
 
     @GetMapping
     @PreAuthorize("@appointmentAuthorization.canAccessBranch(#p0)")
@@ -53,7 +55,9 @@ public class AppointmentController {
     @PreAuthorize("@appointmentAuthorization.canAccessBranch(#p0.branchId)")
     public ResponseEntity<AppointmentResponse> createAppointment(
             @Valid @RequestBody CreateAppointmentRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(appointmentManagement.createAppointment(request));
+        AppointmentResponse appointment = appointmentManagement.createAppointment(request);
+        patientDataChangeNotifier.patientDataChanged();
+        return ResponseEntity.status(HttpStatus.CREATED).body(appointment);
     }
 
     @PutMapping("/{appointmentId}")
@@ -61,13 +65,16 @@ public class AppointmentController {
     public ResponseEntity<AppointmentResponse> updateAppointment(
             @PathVariable UUID appointmentId,
             @Valid @RequestBody UpdateAppointmentRequest request) {
-        return ResponseEntity.ok(appointmentManagement.updateAppointment(appointmentId, request));
+        AppointmentResponse appointment = appointmentManagement.updateAppointment(appointmentId, request);
+        patientDataChangeNotifier.patientDataChanged();
+        return ResponseEntity.ok(appointment);
     }
 
     @DeleteMapping("/{appointmentId}")
     @PreAuthorize("@appointmentAuthorization.canManageAppointment(#p0)")
     public ResponseEntity<Void> deleteAppointment(@PathVariable UUID appointmentId) {
         appointmentManagement.deleteAppointment(appointmentId);
+        patientDataChangeNotifier.patientDataChanged();
         return ResponseEntity.noContent().build();
     }
 }

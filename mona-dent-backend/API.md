@@ -45,6 +45,18 @@ Password update body:
 }
 ```
 
+## Live patient data updates
+
+| Method | Path | Purpose | Access |
+|---|---|---|---|
+| `GET` | `/api/events/patients` | Receive live patient-data change events | Any authenticated user |
+
+Connect with the same bearer access token used for API requests. The response is a
+server-sent event stream. It sends a `patient-changed` event when a patient profile,
+dental chart, visit, file, or appointment changes, and once when the stream connects.
+Clients should reload the patient data they currently display after receiving the
+event. Notifications are sent after the database transaction commits.
+
 ## Users
 
 | Method | Path | Purpose | Access |

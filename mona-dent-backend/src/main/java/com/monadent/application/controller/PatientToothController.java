@@ -1,5 +1,6 @@
 package com.monadent.application.controller;
 
+import com.monadent.application.events.PatientDataChangeNotifier;
 import com.monadent.application.port.PatientToothManagement;
 import com.monadent.contracts.teeth.CreatePatientToothRequest;
 import com.monadent.contracts.teeth.PatientToothResponse;
@@ -25,6 +26,7 @@ import java.util.UUID;
 @RequestMapping("/patients/{patientId}/teeth")
 public class PatientToothController {
     private final PatientToothManagement patientToothManagement;
+    private final PatientDataChangeNotifier patientDataChangeNotifier;
 
     @GetMapping
     public ResponseEntity<List<PatientToothResponse>> getPatientTeeth(@PathVariable UUID patientId) {
@@ -41,8 +43,10 @@ public class PatientToothController {
     public ResponseEntity<PatientToothResponse> addPatientTooth(
             @PathVariable UUID patientId,
             @Valid @RequestBody CreatePatientToothRequest request) {
+        PatientToothResponse tooth = patientToothManagement.addPatientTooth(patientId, request);
+        patientDataChangeNotifier.patientDataChanged();
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(patientToothManagement.addPatientTooth(patientId, request));
+                .body(tooth);
     }
 
     @PutMapping("/{toothId}")
@@ -50,6 +54,8 @@ public class PatientToothController {
             @PathVariable UUID patientId,
             @PathVariable UUID toothId,
             @Valid @RequestBody UpdatePatientToothRequest request) {
-        return ResponseEntity.ok(patientToothManagement.updatePatientTooth(patientId, toothId, request));
+        PatientToothResponse tooth = patientToothManagement.updatePatientTooth(patientId, toothId, request);
+        patientDataChangeNotifier.patientDataChanged();
+        return ResponseEntity.ok(tooth);
     }
 }

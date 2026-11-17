@@ -1,5 +1,6 @@
 package com.monadent.application.controller;
 
+import com.monadent.application.events.PatientDataChangeNotifier;
 import com.monadent.application.port.PatientManagement;
 import com.monadent.contracts.patients.CreatePatientRequest;
 import com.monadent.contracts.patients.PatientResponse;
@@ -24,6 +25,7 @@ import java.util.UUID;
 @RequestMapping("/patients")
 public class PatientController {
     private final PatientManagement patientManagement;
+    private final PatientDataChangeNotifier patientDataChangeNotifier;
 
     @GetMapping
     public ResponseEntity<List<PatientResponse>> getPatients() {
@@ -37,13 +39,17 @@ public class PatientController {
 
     @PostMapping
     public ResponseEntity<PatientResponse> createPatient(@Valid @RequestBody CreatePatientRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(patientManagement.createPatient(request));
+        PatientResponse patient = patientManagement.createPatient(request);
+        patientDataChangeNotifier.patientDataChanged();
+        return ResponseEntity.status(HttpStatus.CREATED).body(patient);
     }
 
     @PutMapping("/{patientId}")
     public ResponseEntity<PatientResponse> updatePatient(
             @PathVariable UUID patientId,
             @Valid @RequestBody UpdatePatientRequest request) {
-        return ResponseEntity.ok(patientManagement.updatePatient(patientId, request));
+        PatientResponse patient = patientManagement.updatePatient(patientId, request);
+        patientDataChangeNotifier.patientDataChanged();
+        return ResponseEntity.ok(patient);
     }
 }

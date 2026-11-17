@@ -1,5 +1,6 @@
-import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
-import { finalize } from 'rxjs';
+import { Component, computed, DestroyRef, effect, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { auditTime, finalize } from 'rxjs';
 import { LucideCalendarDays, LucideClock, LucidePlus, LucideUser } from '@lucide/angular';
 import { PageHeader } from '../../components/page-header/page-header';
 import { Container } from '../../components/container/container';
@@ -15,6 +16,7 @@ import { UserStore } from '../../core/stores/user-store';
 import { TranslatePipe } from '../../core/pipes/translate-pipe';
 import { LocalizedDatePipe } from '../../core/pipes/localized-date-pipe';
 import { HttpErrorService } from '../../core/services/http-error-service';
+import { PatientLiveUpdatesService } from '../../core/services/patient-live-updates-service';
 
 @Component({
   selector: 'app-dashboard',
@@ -40,6 +42,8 @@ export class Dashboard implements OnInit {
   private readonly branchStore = inject(BranchStore);
   private readonly userStore = inject(UserStore);
   private readonly httpErrorService = inject(HttpErrorService);
+  private readonly patientLiveUpdates = inject(PatientLiveUpdatesService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly isLoading = signal(true);
   readonly appointmentsError = signal('');
@@ -67,22 +71,7 @@ export class Dashboard implements OnInit {
     effect(() => {
       const branch = this.branchStore.selectedBranch();
       if (branch) {
-        this.appointmentService
-          .getAppointments(branch.branchId, this.toLocalDateString(new Date()))
-          .pipe(finalize(() => this.isLoading.set(false)))
-          .subscribe({
-            next: (appointments) => {
-              this.appointmentsError.set('');
-              this.appointments.set(appointments);
-            },
-            error: (error) => {
-              console.error(error);
-              this.appointments.set([]);
-              this.appointmentsError.set(
-                this.httpErrorService.message(error, "Could not load today's appointments."),
-              );
-            },
-          });
+        this.loadAppointments(branch.branchId);
       }
     });
 
@@ -97,16 +86,49 @@ export class Dashboard implements OnInit {
   ngOnInit(): void {
     this.branchStore.loadBranches();
     this.userStore.loadUser();
+    this.loadPatients();
+    this.patientLiveUpdates.changes$
+      .pipe(auditTime(150), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.loadPatients();
+        const branch = this.branchStore.selectedBranch();
+        if (branch) this.loadAppointments(branch.branchId);
+      });
+  }
+
+  private loadPatients(): void {
     this.patientService
       .getPatients()
-      .pipe(finalize(() => this.isPatientsLoading.set(false)))
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isPatientsLoading.set(false)))
       .subscribe({
-        next: (patients) => this.patients.set(patients),
+        next: (patients) => {
+          this.patientsError.set('');
+          this.patients.set(patients);
+        },
         error: (error) => {
           console.error(error);
           this.patients.set([]);
           this.patientsError.set(
             this.httpErrorService.message(error, 'Could not load patients.'),
+          );
+        },
+      });
+  }
+
+  private loadAppointments(branchId: string): void {
+    this.appointmentService
+      .getAppointments(branchId, this.toLocalDateString(new Date()))
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        next: (appointments) => {
+          this.appointmentsError.set('');
+          this.appointments.set(appointments);
+        },
+        error: (error) => {
+          console.error(error);
+          this.appointments.set([]);
+          this.appointmentsError.set(
+            this.httpErrorService.message(error, "Could not load today's appointments."),
           );
         },
       });

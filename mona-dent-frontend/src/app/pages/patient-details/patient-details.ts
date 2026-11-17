@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { LucideDownload, LucidePencil } from '@lucide/angular';
 import {
+  auditTime,
   EMPTY,
   catchError,
   distinctUntilChanged,
@@ -12,6 +13,7 @@ import {
   map,
   of,
   switchMap,
+  Subject,
 } from 'rxjs';
 import { AppointmentResponse } from '../../core/models/Appointment';
 import { PatientResponse } from '../../core/models/Patient';
@@ -37,6 +39,7 @@ import { PatientForm } from '../patients/components/patient-form/patient-form';
 import { TranslatePipe } from '../../core/pipes/translate-pipe';
 import { LocalizedDatePipe } from '../../core/pipes/localized-date-pipe';
 import { HttpErrorService } from '../../core/services/http-error-service';
+import { PatientLiveUpdatesService } from '../../core/services/patient-live-updates-service';
 import { PatientMedicalRecordPdfService } from '../../core/services/patient-medical-record-pdf-service';
 import { LanguageCode, LanguageService } from '../../core/services/language-service';
 import { CustomCalendar } from '../../components/custom-inputs/custom-calendar/custom-calendar';
@@ -71,6 +74,7 @@ export class PatientDetails {
   private readonly appointmentService = inject(AppointmentService);
   private readonly visitService = inject(VisitService);
   private readonly patientToothService = inject(PatientToothService);
+  private readonly patientLiveUpdates = inject(PatientLiveUpdatesService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly httpErrorService = inject(HttpErrorService);
   private readonly medicalRecordPdfService = inject(PatientMedicalRecordPdfService);
@@ -108,23 +112,21 @@ export class PatientDetails {
     { value: 'ru', label: 'Russian' },
     { value: 'en', label: 'English' },
   ];
+  private readonly patientReloads = new Subject<string>();
+  private currentPatientId: string | null = null;
 
   constructor() {
-    this.route.paramMap
+    this.patientReloads
       .pipe(
-        map((params) => params.get('id')),
-        filter((patientId): patientId is string => patientId !== null),
-        distinctUntilChanged(),
         switchMap((patientId) => {
           this.isLoading.set(true);
           this.errorMessage.set('');
           this.toothError.set('');
           this.toothHistoryError.set('');
           this.toothHistory.set([]);
-          this.initialTeeth.set([]);
 
           return forkJoin({
-            patients: this.patientService.getPatients(),
+            patient: this.patientService.getPatient(patientId),
             appointments: this.appointmentService.getPatientAppointments(patientId),
             visits: this.visitService.getPatientVisits(patientId),
             teeth: this.patientToothService.getPatientTeeth(patientId).pipe(
@@ -146,8 +148,8 @@ export class PatientDetails {
               }),
             ),
           }).pipe(
-            map(({ patients, appointments, visits, teeth, toothHistory }) => ({
-              patient: patients.find((item) => item.patientId === patientId) ?? null,
+            map(({ patient, appointments, visits, teeth, toothHistory }) => ({
+              patient,
               appointments,
               visits,
               teeth,
@@ -175,6 +177,25 @@ export class PatientDetails {
         this.toothHistory.set(toothHistory);
         this.initialTeeth.set(teeth);
         if (!patient) this.errorMessage.set('Patient not found.');
+      });
+
+    this.route.paramMap
+      .pipe(
+        map((params) => params.get('id')),
+        filter((patientId): patientId is string => patientId !== null),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((patientId) => {
+        if (this.currentPatientId !== patientId) this.initialTeeth.set([]);
+        this.currentPatientId = patientId;
+        this.patientReloads.next(patientId);
+      });
+
+    this.patientLiveUpdates.changes$
+      .pipe(auditTime(150), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.currentPatientId) this.patientReloads.next(this.currentPatientId);
       });
   }
 

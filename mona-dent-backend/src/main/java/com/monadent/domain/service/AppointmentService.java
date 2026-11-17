@@ -1,5 +1,6 @@
 package com.monadent.domain.service;
 
+import com.monadent.application.events.PatientDataChangeNotifier;
 import com.monadent.application.port.AppointmentManagement;
 import com.monadent.application.port.VisitManagement;
 import com.monadent.contracts.appointments.AppointmentResponse;
@@ -46,6 +47,7 @@ public class AppointmentService implements AppointmentManagement {
     private final AppointmentMapper appointmentMapper;
     private final VisitManagement visitManagement;
     private final VisitJpaRepository visitJpaRepository;
+    private final PatientDataChangeNotifier patientDataChangeNotifier;
 
     @Override
     @Transactional(readOnly = true)
@@ -152,6 +154,10 @@ public class AppointmentService implements AppointmentManagement {
                                                                           .toList();
         completedAppointments.forEach(appointment -> appointment.setStatus(AppointmentStatus.COMPLETED));
         appointmentJpaRepository.saveAll(completedAppointments);
+
+        if (!startedAppointments.isEmpty() || !completedAppointments.isEmpty()) {
+            patientDataChangeNotifier.patientDataChanged();
+        }
 
         appointmentJpaRepository.findByStatusIn(List.of(AppointmentStatus.IN_PROGRESS, AppointmentStatus.COMPLETED))
                                 .forEach(this::createVisitIfMissing);

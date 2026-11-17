@@ -96,6 +96,10 @@ export class Overview {
   private readonly httpErrorService = inject(HttpErrorService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private loadedPatientId: string | null = null;
+  private loadedTeeth: PatientToothResponse[] | null = null;
+  private loadedToothHistory: PatientToothHistoryResponse[] | null = null;
+  private chartInitializedForPatient = false;
 
   readonly toothHistory = signal<PatientToothHistoryResponse[]>([]);
   readonly toothHistoryPage = signal(0);
@@ -119,28 +123,52 @@ export class Overview {
 
   constructor() {
     effect(() => {
-      this.patientId();
+      const patientId = this.patientId();
       const teeth = this.initialTeeth();
-      this.toothHistory.set(this.initialToothHistory());
-      this.toothHistoryPage.set(0);
-      this.toothHistoryFilter.set(null);
+      const history = this.initialToothHistory();
+      const isNewPatient = patientId !== this.loadedPatientId;
+      const teethChanged = teeth !== this.loadedTeeth;
+      const historyChanged = history !== this.loadedToothHistory;
+      if (isNewPatient) this.chartInitializedForPatient = false;
+      const initializeChart = isNewPatient || (!this.chartInitializedForPatient && teeth.length > 0);
+
+      if (!isNewPatient && !teethChanged && !historyChanged) return;
+
+      const hasUnsavedToothChanges = !this.toothChangesUnchanged();
+      if (isNewPatient || teethChanged) {
+        this.toothRecords.set(
+          Object.fromEntries(teeth.map((tooth) => [tooth.toothNumber, this.toothRecord(tooth)])),
+        );
+      }
+      if (isNewPatient || historyChanged) {
+        this.toothHistory.set(history);
+      }
       this.toothError.set(this.initialToothError());
       this.toothHistoryError.set(this.initialToothHistoryError());
-      this.toothRecords.set(
-        Object.fromEntries(teeth.map((tooth) => [tooth.toothNumber, this.toothRecord(tooth)])),
-      );
-      const firstTooth = untracked(
-        () => this.teethInArch('upper')[0] ?? this.teethInArch('lower')[0] ?? null,
-      );
-      this.selectedToothNumber.set(firstTooth?.number ?? 0);
-      this.toothNotesDraft.set(
-        firstTooth?.number
-          ? (teeth.find((tooth) => tooth.toothNumber === firstTooth.number)?.notes ?? '')
-          : '',
-      );
-      this.toothFindingsDraft.set(null);
-      this.toothMobilityDraft.set(null);
-      this.toothSaveMessage.set('');
+
+      if (initializeChart) {
+        this.toothHistoryPage.set(0);
+        this.toothHistoryFilter.set(null);
+        const firstTooth = untracked(
+          () => this.teethInArch('upper')[0] ?? this.teethInArch('lower')[0] ?? null,
+        );
+        this.selectedToothNumber.set(firstTooth?.number ?? 0);
+        this.toothNotesDraft.set(
+          firstTooth?.number
+            ? (teeth.find((tooth) => tooth.toothNumber === firstTooth.number)?.notes ?? '')
+            : '',
+        );
+        this.toothFindingsDraft.set(null);
+        this.toothMobilityDraft.set(null);
+        this.toothSaveMessage.set('');
+        this.chartInitializedForPatient = teeth.length > 0;
+      } else if (teethChanged && hasUnsavedToothChanges) {
+        this.toothSaveMessage.set('The chart changed in another session. Your unsaved changes were kept.');
+      }
+
+      this.loadedPatientId = patientId;
+      this.loadedTeeth = teeth;
+      this.loadedToothHistory = history;
     });
   }
 

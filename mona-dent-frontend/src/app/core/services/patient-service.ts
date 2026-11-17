@@ -14,6 +14,10 @@ export class PatientService {
     return this.api.get<PatientResponse[]>(this.endpoint);
   }
 
+  getPatient(patientId: string): Observable<PatientResponse> {
+    return this.api.get<PatientResponse>(`${this.endpoint}/${patientId}`);
+  }
+
   createPatient(request: CreatePatientRequest): Observable<PatientResponse> {
     return this.api.post<PatientResponse, CreatePatientRequest>(this.endpoint, request);
   }

@@ -1,4 +1,5 @@
-import { Component, HostListener, Input, OnChanges, OnDestroy, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, Input, OnChanges, OnDestroy, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import {
   LucideChevronLeft,
@@ -8,13 +9,14 @@ import {
   LucideUpload,
   LucideX,
 } from '@lucide/angular';
-import { EMPTY, Subscription, from, concatMap, catchError, finalize, map, mergeMap, tap } from 'rxjs';
+import { EMPTY, Subscription, auditTime, from, concatMap, catchError, finalize, map, mergeMap, tap } from 'rxjs';
 import { Container } from '../../../../components/container/container';
 import { TranslatePipe } from '../../../../core/pipes/translate-pipe';
 import { PatientFile } from '../../../../core/models/PatientFile';
 import { PatientFileService } from '../../../../core/services/patient-file-service';
 import { HttpErrorService } from '../../../../core/services/http-error-service';
 import { Popup } from '../../../../components/popup/popup';
+import { PatientLiveUpdatesService } from '../../../../core/services/patient-live-updates-service';
 
 @Component({
   selector: 'app-files',
@@ -36,6 +38,8 @@ export class Files implements OnChanges, OnDestroy {
   @Input() patientId = '';
 
   private readonly patientFileService = inject(PatientFileService);
+  private readonly patientLiveUpdates = inject(PatientLiveUpdatesService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly httpErrorService = inject(HttpErrorService);
   private readonly sanitizer = inject(DomSanitizer);
   readonly uploadedFiles = signal<PatientFile[]>([]);
@@ -54,6 +58,14 @@ export class Files implements OnChanges, OnDestroy {
   private thumbnailRequest: Subscription | null = null;
   private readonly thumbnailObjectUrls = new Map<string, string>();
 
+  constructor() {
+    this.patientLiveUpdates.changes$
+      .pipe(auditTime(150), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.patientId) this.loadFiles();
+      });
+  }
+
   ngOnDestroy(): void {
     this.clearPreviewUrl();
     this.clearThumbnails();
@@ -61,6 +73,10 @@ export class Files implements OnChanges, OnDestroy {
 
   ngOnChanges(): void {
     if (!this.patientId) return;
+    this.loadFiles();
+  }
+
+  private loadFiles(): void {
     this.isLoading.set(true);
     this.patientFileService.list(this.patientId).pipe(
       catchError((error) => {

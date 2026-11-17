@@ -1,5 +1,6 @@
 package com.monadent.application.controller;
 
+import com.monadent.application.events.PatientDataChangeNotifier;
 import com.monadent.application.security.AuthenticatedUserProvider;
 import com.monadent.domain.models.entity.PatientFile;
 import com.monadent.domain.models.security.CustomUserDetails;
@@ -48,6 +49,7 @@ public class PatientFileController {
     private final PatientFileJpaRepository fileRepository;
     private final PatientJpaRepository patientRepository;
     private final AuthenticatedUserProvider authenticatedUserProvider;
+    private final PatientDataChangeNotifier patientDataChangeNotifier;
 
     @Value("${app.files.directory:${user.home}/.mona-dent/files}")
     private String filesDirectory;
@@ -96,8 +98,9 @@ public class PatientFileController {
         record.setContentType(file.getContentType() == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : file.getContentType());
         record.setFileSizeBytes(file.getSize());
         try {
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(PatientFileResponse.from(fileRepository.saveAndFlush(record)));
+            PatientFileResponse response = PatientFileResponse.from(fileRepository.saveAndFlush(record));
+            patientDataChangeNotifier.patientDataChanged();
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException error) {
             Files.deleteIfExists(target);
             throw error;
@@ -154,6 +157,7 @@ public class PatientFileController {
         PatientFile record = findFile(patientId, fileId);
         fileRepository.delete(record);
         Files.deleteIfExists(resolveStorageKey(record.getStorageKey()));
+        patientDataChangeNotifier.patientDataChanged();
         return ResponseEntity.noContent().build();
     }
 
