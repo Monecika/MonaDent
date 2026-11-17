@@ -24,6 +24,7 @@ export class CustomSelectInput {
   placeholder = input<string>('Select an option');
   value = model<string>('');
   disabled = input<boolean>(false);
+  invalid = input<boolean>(false);
   widePanel = input<boolean>(false);
   searchPlaceholder = input<string>('Search...');
   searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');

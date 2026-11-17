@@ -33,6 +33,7 @@ export class CustomCalendar {
   selectedDate = model<Date>(new Date());
   selectWeek = input<boolean>(false);
   fitContent = input<boolean>(false);
+  invalid = input<boolean>(false);
   placeholder = input<string>('');
   minYear = input<number | null>(null);
   maxYear = input<number | null>(null);

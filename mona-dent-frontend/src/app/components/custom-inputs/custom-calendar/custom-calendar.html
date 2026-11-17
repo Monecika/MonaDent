@@ -7,6 +7,8 @@
     [class.w-full]="!fitContent()"
     [class.w-fit]="fitContent()"
     [class.max-w-full]="fitContent()"
+    [class.border-error]="invalid()"
+    [attr.aria-invalid]="invalid()"
     (click)="toggleCalendar()"
   >
     <span class="flex min-w-0 flex-1 items-center gap-2">

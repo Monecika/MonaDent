@@ -23,6 +23,7 @@
         required
         autocomplete="off"
         formControlName="name"
+        [class.border-error]="form.controls.name.invalid && form.controls.name.touched"
       />
     </div>
 
@@ -35,17 +36,18 @@
         required
         autocomplete="off"
         formControlName="surname"
+        [class.border-error]="form.controls.surname.invalid && form.controls.surname.touched"
       />
     </div>
 
     <div>
       <label for="patient-date-of-birth">{{ 'Date of birth' | translate }}</label>
       <app-custom-calendar
-        class="mt-1 block"
         [value]="form.controls.dateOfBirth.value"
         [selectedDate]="selectedDateForCalendar()"
         [minYear]="1900"
         [maxYear]="currentYear"
+        [invalid]="form.controls.dateOfBirth.invalid && form.controls.dateOfBirth.touched"
         [placeholder]="'Select date of birth' | translate"
         (dateSelected)="onDateOfBirthSelected($event)"
       />
@@ -67,6 +69,7 @@
         [options]="genderOptions"
         [placeholder]="'Select gender' | translate"
         [value]="form.controls.gender.value"
+        [invalid]="form.controls.gender.invalid && form.controls.gender.touched"
         (valueChange)="setGender($event)"
       />
     </div>
@@ -80,6 +83,7 @@
         required
         autocomplete="off"
         formControlName="phone"
+        [class.border-error]="form.controls.phone.invalid && form.controls.phone.touched"
       />
     </div>
 
@@ -97,6 +101,7 @@
         required
         autocomplete="street-address"
         formControlName="homeAddress"
+        [class.border-error]="form.controls.homeAddress.invalid && form.controls.homeAddress.touched"
       />
     </div>
 

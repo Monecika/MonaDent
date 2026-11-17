@@ -30,12 +30,12 @@
         <div class="!grid w-full !grid-cols-2 gap-3 max-[480px]:!grid-cols-1">
           <div class="!flex !flex-col items-stretch gap-1 min-w-0">
             <label for="new-patient-name">{{ 'Patient name' | translate }}</label>
-            <input id="new-patient-name" type="text" formControlName="newPatientName" required />
+            <input id="new-patient-name" type="text" formControlName="newPatientName" required [class.border-error]="form.controls.newPatientName.invalid && form.controls.newPatientName.touched" />
           </div>
 
           <div class="!flex !flex-col items-stretch gap-1 min-w-0">
             <label for="new-patient-surname">{{ 'Patient surname' | translate }}</label>
-            <input id="new-patient-surname" type="text" formControlName="newPatientSurname" required />
+            <input id="new-patient-surname" type="text" formControlName="newPatientSurname" required [class.border-error]="form.controls.newPatientSurname.invalid && form.controls.newPatientSurname.touched" />
           </div>
 
           <div class="!flex !flex-col items-stretch gap-1 min-w-0">
@@ -43,6 +43,7 @@
             <app-custom-calendar
               [value]="form.controls.newPatientDateOfBirth.value"
               [maxYear]="currentYear"
+              [invalid]="form.controls.newPatientDateOfBirth.invalid && form.controls.newPatientDateOfBirth.touched"
               [placeholder]="'Select date of birth' | translate"
               (dateSelected)="onNewPatientDateOfBirthChange($event)"
             />
@@ -54,13 +55,14 @@
               [options]="genderOptions"
               [placeholder]="'Select gender' | translate"
               [value]="form.controls.newPatientGender.value"
+              [invalid]="form.controls.newPatientGender.invalid && form.controls.newPatientGender.touched"
               (valueChange)="setNewPatientGender($event)"
             />
           </div>
 
           <div class="!flex !flex-col items-stretch gap-1 min-w-0">
             <label for="new-patient-phone">{{ 'Phone' | translate }}</label>
-            <input id="new-patient-phone" type="tel" formControlName="newPatientPhone" required />
+            <input id="new-patient-phone" type="tel" formControlName="newPatientPhone" required [class.border-error]="form.controls.newPatientPhone.invalid && form.controls.newPatientPhone.touched" />
           </div>
 
           <div class="!flex !flex-col items-stretch gap-1 min-w-0">
@@ -70,7 +72,7 @@
 
           <div class="!flex !flex-col items-stretch gap-1 min-w-0 col-span-full">
             <label for="new-patient-home-address">{{ 'Home address' | translate }}</label>
-            <input id="new-patient-home-address" type="text" formControlName="newPatientHomeAddress" required />
+            <input id="new-patient-home-address" type="text" formControlName="newPatientHomeAddress" required [class.border-error]="form.controls.newPatientHomeAddress.invalid && form.controls.newPatientHomeAddress.touched" />
           </div>
 
           <div class="!flex !flex-col items-stretch gap-1 min-w-0">
@@ -91,6 +93,7 @@
           [placeholder]="'Select patient' | translate"
           [options]="patientOptions"
           [value]="form.controls.patientId.value"
+          [invalid]="form.controls.patientId.invalid && form.controls.patientId.touched"
           (valueChange)="form.controls.patientId.setValue($event)"
         />
       </div>
@@ -110,6 +113,7 @@
         [placeholder]="'Select time' | translate"
         [options]="timeOptions"
         [value]="form.controls.time.value"
+        [invalid]="form.controls.time.invalid && form.controls.time.touched"
         (valueChange)="form.controls.time.setValue($event)"
       />
     </div>
@@ -130,6 +134,7 @@
         [placeholder]="'Select doctor' | translate"
         [options]="doctorOptions"
         [value]="form.controls.doctorId.value"
+        [invalid]="form.controls.doctorId.invalid && form.controls.doctorId.touched"
         (valueChange)="form.controls.doctorId.setValue($event)"
       />
     </div>
