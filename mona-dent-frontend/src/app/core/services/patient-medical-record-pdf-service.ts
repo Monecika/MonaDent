@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { PatientResponse } from '../models/Patient';
 import { PatientToothHistoryResponse, PatientToothResponse } from '../models/PatientTooth';
 import { VisitResponse } from '../models/Visit';
+import { OrganizationSettings } from '../models/Organization';
 
 type ReportLanguage = 'ro' | 'ru' | 'en';
 
@@ -85,6 +86,7 @@ export class PatientMedicalRecordPdfService {
   writePrintView(
     printWindow: Window,
     patient: PatientResponse,
+    organization: OrganizationSettings,
     visits: VisitResponse[],
     teeth: PatientToothResponse[],
     toothHistory: PatientToothHistoryResponse[],
@@ -339,7 +341,7 @@ export class PatientMedicalRecordPdfService {
         .muted { color:#555; }
         @media print { body { print-color-adjust:exact; -webkit-print-color-adjust:exact; } }
       </style></head><body>
-      <div class="top"><strong>Clinica Stomatologică Cudalb Dent</strong><div style="text-align:right">Documentație medicală<br>Formular Nr. 043/e<br>Aprobat de MS al RM nr. 828 din 31.10.2011</div></div>
+      <div class="top"><div><strong>${safe(organization.name)}</strong><div>IDNO: ${safe(organization.idno)}</div></div><div style="text-align:right">Documentație medicală<br>Formular Nr. 043/e<br>Aprobat de MS al RM nr. 828 din 31.10.2011</div></div>
       <h1>FIȘA MEDICALĂ A BOLNAVULUI STOMATOLOGIC Nr. ${safe(patient.patientNumber)}</h1>
       <div class="date-row"><div class="date-field day">${String(today.getDate()).padStart(2, '0')}</div><div class="date-field month">${new Intl.DateTimeFormat('ro', { month: 'long' }).format(today)}</div><span>${today.getFullYear()}</span></div>
       <div class="row"><span class="label">Nume, prenume</span><div class="field">${safe(`${patient.name} ${patient.surname}`)}</div><span class="label">a/n</span><div class="field" style="max-width:100px">${safe(day(patient.dateOfBirth))}</div></div>

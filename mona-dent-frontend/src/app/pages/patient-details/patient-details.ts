@@ -37,6 +37,7 @@ import { TranslatePipe } from '../../core/pipes/translate-pipe';
 import { LocalizedDatePipe } from '../../core/pipes/localized-date-pipe';
 import { HttpErrorService } from '../../core/services/http-error-service';
 import { PatientMedicalRecordPdfService } from '../../core/services/patient-medical-record-pdf-service';
+import { OrganizationService } from '../../core/services/organization-service';
 import { CustomCalendar } from '../../components/custom-inputs/custom-calendar/custom-calendar';
 
 @Component({
@@ -69,6 +70,7 @@ export class PatientDetails {
   private readonly destroyRef = inject(DestroyRef);
   private readonly httpErrorService = inject(HttpErrorService);
   private readonly medicalRecordPdfService = inject(PatientMedicalRecordPdfService);
+  private readonly organizationService = inject(OrganizationService);
 
   readonly tabs = [
     { label: 'Overview', value: 'overview' },
@@ -284,18 +286,26 @@ export class PatientDetails {
     this.isGeneratingMedicalRecord.set(true);
     printWindow.document.write('<!doctype html><title>Preparing medical record</title><p>Preparing medical record…</p>');
     forkJoin({
+      organization: this.organizationService.getOrganization(),
       teeth: this.patientToothService.getPatientTeeth(patient.patientId),
       history: this.patientToothService.getPatientToothHistory(patient.patientId),
     }).pipe(
       finalize(() => this.isGeneratingMedicalRecord.set(false)),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe({
-      next: ({ teeth, history }) => {
+      next: ({ organization, teeth, history }) => {
         if (printWindow.closed) return;
+        if (!organization.name.trim() || !organization.idno.trim()) {
+          printWindow.close();
+          this.medicalRecordError.set('Set the organization name and IDNO before generating the medical record.');
+          this.isMedicalRecordOptionsOpen.set(true);
+          return;
+        }
         try {
           this.medicalRecordPdfService.writePrintView(
             printWindow,
             patient,
+            organization,
             this.visits(),
             teeth,
             history,
@@ -313,7 +323,7 @@ export class PatientDetails {
         printWindow.close();
         this.medicalRecordError.set(this.httpErrorService.message(
           error,
-          'Could not load the patient dental history for the report.',
+          'Could not load organization or patient details for the report.',
         ));
         this.isMedicalRecordOptionsOpen.set(true);
       },

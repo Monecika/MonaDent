@@ -110,6 +110,26 @@ when starting the backend; the initial address is inserted only when the table i
 The address is read directly from the TCP connection, so a reverse proxy must be
 configured to provide a trusted client address before deploying behind one.
 
+## Organization
+
+Each app installation stores one organization's details for medical records.
+Its `organizationId` is generated as a UUID when the settings record is created;
+the official `idno` is supplied by the organization.
+
+| Method | Path | Purpose | Access |
+|---|---|---|---|
+| `GET` | `/api/organization` | Read organization name and IDNO | Any authenticated user |
+| `PUT` | `/api/organization` | Save organization name and IDNO | Admin |
+
+Update body:
+
+```json
+{
+  "name": "Example Dental Clinic Ltd.",
+  "idno": "1234567890123"
+}
+```
+
 ## Branches
 
 | Method | Path | Purpose | Access |

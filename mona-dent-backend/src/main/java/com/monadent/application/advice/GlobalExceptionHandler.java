@@ -122,6 +122,7 @@ public class GlobalExceptionHandler {
             case "NotBlank" -> translate("validation.not_blank", locale);
             case "NotNull" -> translate("validation.not_null", locale);
             case "Email" -> translate("validation.email", locale);
+            case "Pattern" -> translate("validation.pattern", locale);
             case "Size" -> sizeMessage(error, locale);
             default -> error.getDefaultMessage();
         };

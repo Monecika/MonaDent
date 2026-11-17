@@ -50,6 +50,14 @@ export const routes: Routes = [
         canActivate: [roleGuard('ADMIN')],
       },
       {
+        path: 'organization',
+        loadComponent: () =>
+          import('./pages/organization-management/organization-management').then(
+            (module) => module.OrganizationManagement,
+          ),
+        canActivate: [roleGuard('ADMIN')],
+      },
+      {
         path: 'ip-addresses',
         loadComponent: () =>
           import('./pages/ip-address-management/ip-address-management').then(

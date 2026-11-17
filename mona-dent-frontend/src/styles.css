@@ -86,3 +86,7 @@ input[type="password"]:focus,
 textarea:focus {
   @apply border-accent/20
 }
+
+.border-error {
+  border-color: var(--color-error) !important;
+}

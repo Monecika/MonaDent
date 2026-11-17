@@ -1,0 +1,81 @@
+openapi: 3.0.3
+info:
+  title: Mona Dent Organization API
+  version: 1.0.0
+paths:
+  /organization:
+    get:
+      tags:
+        - Organization
+      operationId: getOrganization
+      summary: Get organization details
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Organization details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationResponse'
+    put:
+      tags:
+        - Organization
+      operationId: updateOrganization
+      summary: Update organization details
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrganizationRequest'
+      responses:
+        '200':
+          description: Organization details updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationResponse'
+        '400':
+          description: Invalid organization details
+        '403':
+          description: Administrator access required
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    UpdateOrganizationRequest:
+      type: object
+      required:
+        - name
+        - idno
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: '.*\S.*'
+        idno:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: '.*\S.*'
+    OrganizationResponse:
+      type: object
+      required:
+        - organizationId
+        - name
+        - idno
+      properties:
+        organizationId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        idno:
+          type: string

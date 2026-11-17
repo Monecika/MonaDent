@@ -80,6 +80,12 @@ export class Aside implements OnInit {
           roles: ['ADMIN'],
         },
         {
+          icon: LucideBuildingComplex,
+          title: 'Organization management',
+          route: '/organization',
+          roles: ['ADMIN'],
+        },
+        {
           icon: LucideShieldCheck,
           title: 'IP allowlist',
           route: '/ip-addresses',

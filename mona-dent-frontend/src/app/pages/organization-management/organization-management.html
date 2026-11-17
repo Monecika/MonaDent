@@ -1,0 +1,50 @@
+<app-page-header
+  [title]="'ADMINISTRATION' | translate"
+  [page]="'Organization management' | translate"
+  [note]="'Manage your organization details used on medical records.' | translate"
+/>
+
+<app-container classes="mt-5 max-w-3xl">
+  @if (isLoading()) {
+    <p class="py-6 text-center text-sm text-secondary">{{ 'Loading organization details...' | translate }}</p>
+  } @else {
+    <form class="grid grid-cols-1 gap-4 sm:grid-cols-2" [formGroup]="form" (ngSubmit)="save()">
+      @if (errorMessage()) {
+        <p class="col-span-full rounded-lg bg-error-bg p-3 text-sm text-error" role="alert">{{ errorMessage() | translate }}</p>
+      }
+      @if (successMessage()) {
+        <p class="col-span-full rounded-lg bg-success/10 p-3 text-sm text-success" role="status">{{ successMessage() | translate }}</p>
+      }
+
+      <div class="flex flex-col gap-1 sm:col-span-2">
+        <label for="organization-name">{{ 'Organization name' | translate }}</label>
+        <input
+          id="organization-name"
+          type="text"
+          maxlength="200"
+          autocomplete="organization"
+          formControlName="name"
+          [class.border-error]="form.controls.name.invalid && form.controls.name.touched"
+        />
+      </div>
+
+      <div class="flex flex-col gap-1 sm:col-span-2">
+        <label for="organization-idno">{{ 'IDNO' | translate }}</label>
+        <input
+          id="organization-idno"
+          type="text"
+          maxlength="50"
+          formControlName="idno"
+          [class.border-error]="form.controls.idno.invalid && form.controls.idno.touched"
+        />
+        <p class="text-xs text-secondary">{{ 'Official company registration number.' | translate }}</p>
+      </div>
+
+      <div class="flex justify-end sm:col-span-2">
+        <app-button type="submit" [disabled]="isSaving()">
+          {{ (isSaving() ? 'Saving...' : 'Save Changes') | translate }}
+        </app-button>
+      </div>
+    </form>
+  }
+</app-container>
