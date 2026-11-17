@@ -33,6 +33,7 @@ import { ConfirmationDialog } from '../../../../components/confirmation-dialog/c
 import { PatientService } from '../../../../core/services/patient-service';
 import {
   CreatePatientRequest,
+  PatientGender,
   PatientResponse,
 } from '../../../../core/models/Patient';
 import { UserService } from '../../../../core/services/user-service';
@@ -101,6 +102,11 @@ export class AppointmentForm implements OnInit {
     newPatientName: [''],
     newPatientSurname: [''],
     newPatientDateOfBirth: [''],
+    newPatientGender: ['' as PatientGender | ''],
+    newPatientHomeAddress: [''],
+    newPatientAllergies: [''],
+    newPatientDiseases: [''],
+    newPatientProfession: [''],
     newPatientPhone: [''],
     selectedDate: [new Date()],
     duration: ['30', Validators.required],
@@ -121,6 +127,19 @@ export class AppointmentForm implements OnInit {
       { label: this.languageService.translate('Cancelled'), value: 'CANCELLED' },
       { label: this.languageService.translate('No-show'), value: 'NO_SHOW' },
     ];
+  }
+
+  get genderOptions(): SelectOption[] {
+    return [
+      { value: 'MALE', label: 'Male' },
+      { value: 'FEMALE', label: 'Female' },
+    ];
+  }
+
+  setNewPatientGender(value: string): void {
+    if (value === 'MALE' || value === 'FEMALE') {
+      this.form.controls.newPatientGender.setValue(value);
+    }
   }
 
   durationOptions: SelectOption[] = Array.from({ length: 8 }, (_, i) => {
@@ -257,6 +276,8 @@ export class AppointmentForm implements OnInit {
       this.form.controls.newPatientName,
       this.form.controls.newPatientSurname,
       this.form.controls.newPatientDateOfBirth,
+      this.form.controls.newPatientGender,
+      this.form.controls.newPatientHomeAddress,
       this.form.controls.newPatientPhone,
     ];
 
@@ -367,7 +388,9 @@ export class AppointmentForm implements OnInit {
       const name = formValue.newPatientName.trim();
       const surname = formValue.newPatientSurname.trim();
       const phone = formValue.newPatientPhone.trim();
-      if (!name || !surname || !phone) {
+      const homeAddress = formValue.newPatientHomeAddress.trim();
+      const gender = formValue.newPatientGender;
+      if (!name || !surname || !phone || !homeAddress || !gender) {
         this.validationError = 'Complete all required patient fields.';
         return;
       }
@@ -376,6 +399,11 @@ export class AppointmentForm implements OnInit {
         name,
         surname,
         dateOfBirth,
+        gender: gender as PatientGender,
+        homeAddress,
+        allergies: formValue.newPatientAllergies.trim(),
+        diseases: formValue.newPatientDiseases.trim(),
+        profession: formValue.newPatientProfession.trim(),
         phone,
       };
     }
@@ -460,10 +488,14 @@ export class AppointmentForm implements OnInit {
     this.form.controls.newPatientName.clearValidators();
     this.form.controls.newPatientSurname.clearValidators();
     this.form.controls.newPatientDateOfBirth.clearValidators();
+    this.form.controls.newPatientGender.clearValidators();
+    this.form.controls.newPatientHomeAddress.clearValidators();
     this.form.controls.newPatientPhone.clearValidators();
     this.form.controls.newPatientName.updateValueAndValidity();
     this.form.controls.newPatientSurname.updateValueAndValidity();
     this.form.controls.newPatientDateOfBirth.updateValueAndValidity();
+    this.form.controls.newPatientGender.updateValueAndValidity();
+    this.form.controls.newPatientHomeAddress.updateValueAndValidity();
     this.form.controls.newPatientPhone.updateValueAndValidity();
     this.patientCreated.emit(patient);
   }

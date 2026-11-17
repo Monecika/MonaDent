@@ -25,37 +25,65 @@
     </div>
 
     @if (form.controls.isPatientNotRegistered.value) {
-      <div class="grid! grid-cols-1! gap-3 sm:grid-cols-2!">
-        <div>
-          <label for="new-patient-name">{{ 'Patient name' | translate }}</label>
-          <input id="new-patient-name" type="text" formControlName="newPatientName" required />
-        </div>
+      <section class="!block col-span-full w-full min-w-0">
+        <h4 class="mb-3 text-sm font-semibold">{{ 'New Patient' | translate }}</h4>
+        <div class="!grid w-full !grid-cols-2 gap-3 max-[480px]:!grid-cols-1">
+          <div class="!flex !flex-col items-stretch gap-1 min-w-0">
+            <label for="new-patient-name">{{ 'Patient name' | translate }}</label>
+            <input id="new-patient-name" type="text" formControlName="newPatientName" required />
+          </div>
 
-        <div>
-          <label for="new-patient-surname">{{ 'Patient surname' | translate }}</label>
-          <input
-            id="new-patient-surname"
-            type="text"
-            formControlName="newPatientSurname"
-            required
-          />
-        </div>
+          <div class="!flex !flex-col items-stretch gap-1 min-w-0">
+            <label for="new-patient-surname">{{ 'Patient surname' | translate }}</label>
+            <input id="new-patient-surname" type="text" formControlName="newPatientSurname" required />
+          </div>
 
-        <div>
-          <label>{{ 'Date of birth' | translate }}</label>
-          <app-custom-calendar
-            [value]="form.controls.newPatientDateOfBirth.value"
-            [maxYear]="currentYear"
-            [placeholder]="'Select date of birth' | translate"
-            (dateSelected)="onNewPatientDateOfBirthChange($event)"
-          />
-        </div>
+          <div class="!flex !flex-col items-stretch gap-1 min-w-0">
+            <label>{{ 'Date of birth' | translate }}</label>
+            <app-custom-calendar
+              [value]="form.controls.newPatientDateOfBirth.value"
+              [maxYear]="currentYear"
+              [placeholder]="'Select date of birth' | translate"
+              (dateSelected)="onNewPatientDateOfBirthChange($event)"
+            />
+          </div>
 
-        <div>
-          <label for="new-patient-phone">{{ 'Phone' | translate }}</label>
-          <input id="new-patient-phone" type="tel" formControlName="newPatientPhone" required />
+          <div class="!flex !flex-col items-stretch gap-1 min-w-0">
+            <label>{{ 'Gender' | translate }}</label>
+            <app-custom-select-input
+              [options]="genderOptions"
+              [placeholder]="'Select gender' | translate"
+              [value]="form.controls.newPatientGender.value"
+              (valueChange)="setNewPatientGender($event)"
+            />
+          </div>
+
+          <div class="!flex !flex-col items-stretch gap-1 min-w-0">
+            <label for="new-patient-phone">{{ 'Phone' | translate }}</label>
+            <input id="new-patient-phone" type="tel" formControlName="newPatientPhone" required />
+          </div>
+
+          <div class="!flex !flex-col items-stretch gap-1 min-w-0">
+            <label for="new-patient-profession">{{ 'Profession' | translate }} <span class="text-secondary">({{ 'Optional' | translate }})</span></label>
+            <input id="new-patient-profession" type="text" formControlName="newPatientProfession" />
+          </div>
+
+          <div class="!flex !flex-col items-stretch gap-1 min-w-0 col-span-full">
+            <label for="new-patient-home-address">{{ 'Home address' | translate }}</label>
+            <input id="new-patient-home-address" type="text" formControlName="newPatientHomeAddress" required />
+          </div>
+
+          <div class="!flex !flex-col items-stretch gap-1 min-w-0">
+            <label for="new-patient-allergies">{{ 'Allergies' | translate }} <span class="text-secondary">({{ 'Optional' | translate }})</span></label>
+            <textarea id="new-patient-allergies" rows="2" formControlName="newPatientAllergies"></textarea>
+          </div>
+
+          <div class="!flex !flex-col items-stretch gap-1 min-w-0">
+            <label for="new-patient-diseases">{{ 'Diseases' | translate }} <span class="text-secondary">({{ 'Optional' | translate }})</span></label>
+            <textarea id="new-patient-diseases" rows="2" formControlName="newPatientDiseases"></textarea>
+          </div>
         </div>
-      </div>
+      </section>
     } @else {
       <div>
         <label>{{ 'Patient' | translate }}</label>
@@ -96,7 +124,7 @@
       />
     </div>
 
-    <div [class.col-span-2]="!isEditing">
+    <div>
       <label>{{ 'Doctor' | translate }}</label>
       <app-custom-select-input
         [placeholder]="'Select doctor' | translate"

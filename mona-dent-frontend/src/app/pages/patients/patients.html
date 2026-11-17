@@ -113,6 +113,7 @@
 
                 <span class="transition group-hover:text-accent">
                   {{ patient.name }} {{ patient.surname }}
+                  <span class="ml-2 text-xs text-secondary">#{{ patient.patientNumber }}</span>
                 </span>
               </div>
             </td>
@@ -198,6 +199,7 @@
             </span>
             <div class="min-w-0 flex-1">
               <a [routerLink]="['/patients', patient.patientId]" class="block truncate text-sm font-semibold">{{ patient.name }} {{ patient.surname }}</a>
+              <p class="text-xs text-secondary">#{{ patient.patientNumber }}</p>
               <p class="mt-1 truncate text-xs text-secondary">{{ patient.phone || ('No phone' | translate) }}</p>
             </div>
             <app-button variant="basic" (click)="openEditPatient(patient)">

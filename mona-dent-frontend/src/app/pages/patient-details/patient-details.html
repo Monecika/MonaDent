@@ -6,13 +6,21 @@
       >
         {{ getInitials(currentPatient) }}
       </span>
-      <app-page-header
-        [page]="'PATIENT #' + currentPatient.patientId.slice(0, 8)"
-        [title]="currentPatient.name + ' ' + currentPatient.surname"
-        [note]="
-          currentPatient.phone + ' · ' + ('Born' | translate) + ' ' + (currentPatient.dateOfBirth | localizedDate: 'd MMM yyyy')
-        "
-      />
+      <div class="flex min-w-0 flex-col gap-2">
+        <p class="text-[10px] font-bold uppercase text-accent">{{ 'PATIENT #' + currentPatient.patientNumber }}</p>
+        <div class="flex flex-wrap items-center gap-2">
+          <h1 class="text-2xl font-semibold text-primary">{{ currentPatient.name }} {{ currentPatient.surname }}</h1>
+          @if (currentPatient.gender === 'MALE') {
+            <span class="rounded-full bg-accent-bg px-2 py-0.5 text-xs font-medium text-accent">{{ 'Male' | translate }}</span>
+          } @else if (currentPatient.gender === 'FEMALE') {
+            <span class="rounded-full bg-accent-bg px-2 py-0.5 text-xs font-medium text-accent">{{ 'Female' | translate }}</span>
+          }
+        </div>
+        <div class="text-sm text-secondary">
+          <p>{{ currentPatient.phone }} · {{ 'Born' | translate }} {{ currentPatient.dateOfBirth | localizedDate: 'd MMM yyyy' }}</p>
+          <p class="mt-1 break-words">{{ 'Home address' | translate }}: {{ currentPatient.homeAddress || '—' }}</p>
+        </div>
+      </div>
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
@@ -26,6 +34,24 @@
       </app-button>
     </div>
   </app-container>
+
+  <app-container classes="mt-3">
+    <div class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="min-w-0">
+        <p class="text-xs font-medium text-secondary">{{ 'Profession' | translate }}</p>
+        <p class="mt-1 break-words text-sm text-primary">{{ currentPatient.profession || '—' }}</p>
+      </div>
+      <div class="min-w-0">
+        <p class="text-xs font-medium text-secondary">{{ 'Allergies' | translate }}</p>
+        <p class="mt-1 whitespace-pre-line break-words text-sm text-primary">{{ currentPatient.allergies?.trim() || '—' }}</p>
+      </div>
+      <div class="min-w-0">
+        <p class="text-xs font-medium text-secondary">{{ 'Diseases' | translate }}</p>
+        <p class="mt-1 whitespace-pre-line break-words text-sm text-primary">{{ currentPatient.diseases?.trim() || '—' }}</p>
+      </div>
+    </div>
+  </app-container>
+
   @if (isMedicalRecordOptionsOpen()) {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" (click)="isMedicalRecordOptionsOpen.set(false)">
       <section
@@ -36,18 +62,9 @@
         (click)="$event.stopPropagation()"
       >
         <h2 class="text-lg font-semibold">{{ 'Download Medical Record' | translate }}</h2>
-        <p class="mt-1 text-sm text-secondary">{{ 'Choose report language and date range.' | translate }}</p>
+        <p class="mt-1 text-sm text-secondary">{{ 'Choose a date range for the report.' | translate }}</p>
 
         <div class="mt-5 grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-          <div class="input-container sm:col-span-2">
-            <label>{{ 'Language' | translate }}</label>
-            <app-custom-select-input
-              [options]="medicalRecordLanguageOptions"
-              [value]="medicalRecordLanguage()"
-              [placeholder]="'Select language'"
-              (selectionChange)="setMedicalRecordLanguage($event.value)"
-            />
-          </div>
           <div class="input-container">
             <label>{{ 'Start date' | translate }}</label>
             <app-custom-calendar

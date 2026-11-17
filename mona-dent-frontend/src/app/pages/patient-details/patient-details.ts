@@ -23,7 +23,6 @@ import { PatientToothHistoryResponse, PatientToothResponse } from '../../core/mo
 import { PatientToothService } from '../../core/services/patient-tooth-service';
 import { Button } from '../../components/custom-inputs/button/button';
 import { Container } from '../../components/container/container';
-import { PageHeader } from '../../components/page-header/page-header';
 import { Overview } from './components/overview/overview';
 import { Visits } from './components/visits/visits';
 import { Appointments } from './components/appointments/appointments';
@@ -38,21 +37,17 @@ import { TranslatePipe } from '../../core/pipes/translate-pipe';
 import { LocalizedDatePipe } from '../../core/pipes/localized-date-pipe';
 import { HttpErrorService } from '../../core/services/http-error-service';
 import { PatientMedicalRecordPdfService } from '../../core/services/patient-medical-record-pdf-service';
-import { LanguageCode, LanguageService } from '../../core/services/language-service';
 import { CustomCalendar } from '../../components/custom-inputs/custom-calendar/custom-calendar';
-import { CustomSelectInput, SelectOption } from '../../components/custom-inputs/custom-select-input/custom-select-input';
 
 @Component({
   selector: 'app-patient-details',
   imports: [
     Button,
     CustomCalendar,
-    CustomSelectInput,
     Container,
     LocalizedDatePipe,
     LucideDownload,
     LucidePencil,
-    PageHeader,
     Overview,
     Visits,
     Appointments,
@@ -74,7 +69,6 @@ export class PatientDetails {
   private readonly destroyRef = inject(DestroyRef);
   private readonly httpErrorService = inject(HttpErrorService);
   private readonly medicalRecordPdfService = inject(PatientMedicalRecordPdfService);
-  private readonly languageService = inject(LanguageService);
 
   readonly tabs = [
     { label: 'Overview', value: 'overview' },
@@ -98,16 +92,10 @@ export class PatientDetails {
   readonly errorMessage = signal('');
   readonly initialTeeth = signal<PatientToothResponse[]>([]);
   readonly isMedicalRecordOptionsOpen = signal(false);
-  readonly medicalRecordLanguage = signal<LanguageCode>('ro');
   readonly medicalRecordDateFrom = signal('');
   readonly medicalRecordDateTo = signal('');
   readonly medicalRecordError = signal('');
   readonly isGeneratingMedicalRecord = signal(false);
-  readonly medicalRecordLanguageOptions: SelectOption[] = [
-    { value: 'ro', label: 'Romanian' },
-    { value: 'ru', label: 'Russian' },
-    { value: 'en', label: 'English' },
-  ];
 
   constructor() {
     this.route.paramMap
@@ -253,13 +241,8 @@ export class PatientDetails {
   }
 
   openMedicalRecordOptions(): void {
-    this.medicalRecordLanguage.set(this.languageService.language());
     this.medicalRecordError.set('');
     this.isMedicalRecordOptionsOpen.set(true);
-  }
-
-  setMedicalRecordLanguage(value: string): void {
-    if (value === 'ro' || value === 'ru' || value === 'en') this.medicalRecordLanguage.set(value);
   }
 
   setMedicalRecordDateFrom(date: Date): void {
@@ -316,7 +299,6 @@ export class PatientDetails {
             this.visits(),
             teeth,
             history,
-            this.medicalRecordLanguage(),
             from,
             to,
           );

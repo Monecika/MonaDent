@@ -66,20 +66,23 @@ label{
 input[type="text"],
 input[type="email"],
 input[type="tel"],
-input[type="password"] {
+input[type="password"],
+textarea {
   @apply p-2 border border-border rounded-lg outline-0 transition
 }
 
 input[type="text"]:hover,
 input[type="email"]:hover,
 input[type="tel"]:hover,
-input[type="password"]:hover {
+input[type="password"]:hover,
+textarea:hover {
   @apply border-border-hover
 }
 
 input[type="text"]:focus,
 input[type="email"]:focus,
 input[type="tel"]:focus,
-input[type="password"]:focus {
+input[type="password"]:focus,
+textarea:focus {
   @apply border-accent/20
 }

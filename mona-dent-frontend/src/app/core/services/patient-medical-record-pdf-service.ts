@@ -2,14 +2,14 @@ import { Injectable } from '@angular/core';
 import { PatientResponse } from '../models/Patient';
 import { PatientToothHistoryResponse, PatientToothResponse } from '../models/PatientTooth';
 import { VisitResponse } from '../models/Visit';
-import type { LanguageCode } from './language-service';
 
 type ReportLanguage = 'ro' | 'ru' | 'en';
 
 const labels: Record<ReportLanguage, Record<string, string>> = {
   ro: {
     title: 'Fișă medicală', generated: 'Generată la', patientInfo: 'Date pacient', fullName: 'Nume complet',
-    birthDate: 'Data nașterii', phone: 'Telefon', patientId: 'Cod pacient', period: 'Perioada', allDates: 'Toată perioada',
+    birthDate: 'Data nașterii', gender: 'Sex', homeAddress: 'Adresa la domiciliu', profession: 'Profesia',
+    allergies: 'Alergii', diseases: 'Boli / afecțiuni', phone: 'Telefon', patientId: 'Cod pacient', period: 'Perioada', allDates: 'Toată perioada',
     appointments: 'Programări', visits: 'Vizite și tratamente', noAppointments: 'Nu există programări în această perioadă.',
     noVisits: 'Nu există vizite în această perioadă.', doctor: 'Medic', date: 'Data', duration: 'Durată', status: 'Stare',
     noTeeth: 'Nu sunt înregistrați dinți pentru acest pacient.',
@@ -32,7 +32,8 @@ const labels: Record<ReportLanguage, Record<string, string>> = {
   },
   ru: {
     title: 'Медицинская карта', generated: 'Создана', patientInfo: 'Данные пациента', fullName: 'Полное имя',
-    birthDate: 'Дата рождения', phone: 'Телефон', patientId: 'Код пациента', period: 'Период', allDates: 'За всё время',
+    birthDate: 'Дата рождения', gender: 'Пол', homeAddress: 'Домашний адрес', profession: 'Профессия',
+    allergies: 'Аллергии', diseases: 'Заболевания', phone: 'Телефон', patientId: 'Код пациента', period: 'Период', allDates: 'За всё время',
     appointments: 'Записи', visits: 'Визиты и лечение', noAppointments: 'За этот период записей нет.',
     noVisits: 'За этот период визитов нет.', doctor: 'Врач', date: 'Дата', duration: 'Длительность', status: 'Статус',
     noTeeth: 'У пациента нет зарегистрированных зубов.',
@@ -55,7 +56,8 @@ const labels: Record<ReportLanguage, Record<string, string>> = {
   },
   en: {
     title: 'Medical Record', generated: 'Generated on', patientInfo: 'Patient Information', fullName: 'Full name',
-    birthDate: 'Date of birth', phone: 'Phone', patientId: 'Patient ID', period: 'Date range', allDates: 'All dates',
+    birthDate: 'Date of birth', gender: 'Gender', homeAddress: 'Home address', profession: 'Profession',
+    allergies: 'Allergies', diseases: 'Diseases', phone: 'Phone', patientId: 'Patient ID', period: 'Date range', allDates: 'All dates',
     appointments: 'Appointments', visits: 'Visits and Treatment', noAppointments: 'No appointments in this date range.',
     noVisits: 'No visits in this date range.', doctor: 'Doctor', date: 'Date', duration: 'Duration', status: 'Status',
     noTeeth: 'No teeth are recorded for this patient.',
@@ -86,11 +88,11 @@ export class PatientMedicalRecordPdfService {
     visits: VisitResponse[],
     teeth: PatientToothResponse[],
     toothHistory: PatientToothHistoryResponse[],
-    language: LanguageCode,
     dateFrom: string,
     dateTo: string,
   ): void {
-    const lang: ReportLanguage = language;
+    const lang: ReportLanguage = 'ro';
+    const today = new Date();
     const t = (key: string) => labels[lang][key] ?? key;
     const legacyFinding = (status?: string, presenceStatus?: string): string[] => {
       if (presenceStatus === 'EXTRACTED' || presenceStatus === 'CONGENITALLY_MISSING') return ['MISSING'];
@@ -302,18 +304,18 @@ export class PatientMedicalRecordPdfService {
     printWindow.document.open();
     printWindow.document.write(`<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><title>${safe(t('title'))} - ${safe(patient.name)} ${safe(patient.surname)}</title>
       <style>
-        @page { size: A4; margin: 12mm 14mm; }
+        @page { size: A4; margin: 0; }
         * { box-sizing: border-box; }
-        body { margin: 0; color: #111; font: 9pt/1.25 "Times New Roman", serif; }
+        body { margin: 12mm 14mm; color: #111; font: 9pt/1.25 "Times New Roman", serif; }
         .top { display:flex; justify-content:space-between; font-size:8pt; margin-bottom:10px; }
         .top strong { font-size:10pt; }
         h1 { margin: 10px 0 12px; text-align:center; font-size:15pt; font-weight:normal; }
         .formline { min-height:20px; border-bottom:1px solid #333; padding:2px 0; }
         .row { display:flex; gap:12px; align-items:end; margin:3px 0; }
         .date-row { display:flex; justify-content:center; align-items:end; gap:9px; margin:3px 0; }
-        .date-field { height:20px; border-bottom:1px solid #333; }
+        .date-field { display:flex; height:20px; align-items:end; justify-content:center; border-bottom:1px solid #333; }
         .date-field.day { width:38px; }
-        .date-field.month { width:72px; }
+        .date-field.month { width:100px; }
         .field { flex:1; border-bottom:1px solid #333; min-height:20px; padding:2px 4px; }
         .label { white-space:nowrap; }
         .section { margin-top:5px; }
@@ -338,14 +340,14 @@ export class PatientMedicalRecordPdfService {
         @media print { body { print-color-adjust:exact; -webkit-print-color-adjust:exact; } }
       </style></head><body>
       <div class="top"><strong>Clinica Stomatologică Cudalb Dent</strong><div style="text-align:right">Documentație medicală<br>Formular Nr. 043/e<br>Aprobat de MS al RM nr. 828 din 31.10.2011</div></div>
-      <h1>FIȘA MEDICALĂ A BOLNAVULUI STOMATOLOGIC Nr. ________</h1>
-      <div class="date-row"><div class="date-field day"></div><div class="date-field month"></div><span>${new Date().getFullYear()}</span></div>
+      <h1>FIȘA MEDICALĂ A BOLNAVULUI STOMATOLOGIC Nr. ${safe(patient.patientNumber)}</h1>
+      <div class="date-row"><div class="date-field day">${String(today.getDate()).padStart(2, '0')}</div><div class="date-field month">${new Intl.DateTimeFormat('ro', { month: 'long' }).format(today)}</div><span>${today.getFullYear()}</span></div>
       <div class="row"><span class="label">Nume, prenume</span><div class="field">${safe(`${patient.name} ${patient.surname}`)}</div><span class="label">a/n</span><div class="field" style="max-width:100px">${safe(day(patient.dateOfBirth))}</div></div>
-      <div class="row"><span class="label">Sex M / F, IDNP</span><div class="field"></div><span class="label">Profesia</span><div class="field"></div><span class="label">Tel:</span><div class="field">${safe(patient.phone)}</div></div>
-      <div class="row"><span class="label">Adresa la domiciliu</span><div class="field"></div><span class="label">Locul de muncă</span><div class="field"></div></div>
+      <div class="row"><span class="label">Sex</span><div class="field">${safe(patient.gender === 'MALE' ? 'Masculin' : patient.gender === 'FEMALE' ? 'Feminin' : '')}</div><span class="label">Profesia</span><div class="field">${safe(patient.profession?.trim() ?? '')}</div><span class="label">Tel:</span><div class="field">${safe(patient.phone)}</div></div>
+      <div class="row"><span class="label">Adresa la domiciliu</span><div class="field">${safe(patient.homeAddress ?? '')}</div></div>
       <div class="section"><div class="section-heading"><span class="section-title">Diagnosticul</span><span class="field">${safe(visitList[0]?.description ?? '')}</span></div><div class="ruled"></div></div>
       <div class="section"><div class="section-heading"><span class="section-title">Acuzе</span><span class="field">${safe(visitList[0]?.notes ?? '')}</span></div><div class="ruled"></div></div>
-      <div class="row"><span>Boli antecedente și concomitente C/O-</span><div class="field"></div><span>Hepatită</span><div class="field"></div><span>Alergii</span><div class="field"></div></div>
+      <div class="row"><span>Boli / afecțiuni</span><div class="field">${safe(patient.diseases?.trim() ?? '')}</div><span>Alergii</span><div class="field">${safe(patient.allergies?.trim() ?? '')}</div></div>
       <div class="section"><div class="section-heading"><span class="section-title">Evoluția actualei maladie</span><span class="field">${safe(diseaseEvolutionText)}</span></div><div class="ruled"></div></div>
       <div class="section"><div class="section-heading"><span class="section-title">Examen extraoral</span><span class="field"></span></div><div class="ruled"></div></div>
       <div class="section"><div class="section-heading"><span class="section-title">Examen intraoral</span><span class="field"></span></div><div class="ruled"></div></div>

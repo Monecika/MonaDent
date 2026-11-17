@@ -62,6 +62,16 @@
     </div>
 
     <div>
+      <label>{{ 'Gender' | translate }}</label>
+      <app-custom-select-input
+        [options]="genderOptions"
+        [placeholder]="'Select gender' | translate"
+        [value]="form.controls.gender.value"
+        (valueChange)="setGender($event)"
+      />
+    </div>
+
+    <div>
       <label for="patient-phone">{{ 'Phone' | translate }}</label>
       <input
         id="patient-phone"
@@ -71,6 +81,33 @@
         autocomplete="off"
         formControlName="phone"
       />
+    </div>
+
+    <div>
+      <label for="patient-profession">{{ 'Profession' | translate }} <span class="text-secondary">({{ 'Optional' | translate }})</span></label>
+      <input id="patient-profession" type="text" maxlength="150" formControlName="profession" />
+    </div>
+
+    <div class="col-span-full">
+      <label for="patient-home-address">{{ 'Home address' | translate }}</label>
+      <input
+        id="patient-home-address"
+        type="text"
+        maxlength="255"
+        required
+        autocomplete="street-address"
+        formControlName="homeAddress"
+      />
+    </div>
+
+    <div>
+      <label for="patient-allergies">{{ 'Allergies' | translate }} <span class="text-secondary">({{ 'Optional' | translate }})</span></label>
+      <textarea id="patient-allergies" rows="2" formControlName="allergies"></textarea>
+    </div>
+
+    <div>
+      <label for="patient-diseases">{{ 'Diseases' | translate }} <span class="text-secondary">({{ 'Optional' | translate }})</span></label>
+      <textarea id="patient-diseases" rows="2" formControlName="diseases"></textarea>
     </div>
 
     @if (validationError) {

@@ -152,18 +152,34 @@ Create patient body:
   "name": "Sam",
   "surname": "Patient",
   "dateOfBirth": "1985-09-20",
+  "gender": "MALE",
+  "homeAddress": "10 Example Street",
+  "allergies": "",
+  "diseases": "",
+  "profession": "",
   "phone": "+1-555-0101"
 }
 ```
+
+Name, surname, date of birth, gender (`MALE` or `FEMALE`), home address, and
+phone are required. Allergies and diseases may be empty; profession is optional.
+Each patient receives a sequential `patientNumber`, starting at 1, for use on
+the printed medical record. Existing patients retain their assigned number.
 
 Patient profile response:
 
 ```json
 {
   "patientId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  "patientNumber": 1,
   "name": "Sam",
   "surname": "Patient",
   "dateOfBirth": "1985-09-20",
+  "gender": "MALE",
+  "homeAddress": "10 Example Street",
+  "allergies": "",
+  "diseases": "",
+  "profession": "",
   "phone": "+1-555-0101",
   "createdAt": "2026-11-07T18:11:28+01:00"
 }

@@ -63,16 +63,28 @@ export class PatientDataImportService {
 
     for (const entry of entries) {
       const sourcePatient = entry.patient;
-      const profileRequest: CreatePatientRequest = {
-        name: sourcePatient.name,
-        surname: sourcePatient.surname,
-        dateOfBirth: sourcePatient.dateOfBirth,
-        phone: sourcePatient.phone,
-      };
-      let patient = existingPatients.find((candidate) => this.samePatient(candidate, profileRequest));
+      let patient = existingPatients.find((candidate) => this.samePatient(candidate, sourcePatient));
       if (patient) {
         result.profilesReused++;
       } else {
+        if (!sourcePatient.gender || !sourcePatient.homeAddress?.trim()) {
+          result.failures.push(
+            `Could not import ${sourcePatient.name} ${sourcePatient.surname}: this export does not contain the required gender and home address for creating a new patient.`,
+          );
+          continue;
+        }
+
+        const profileRequest: CreatePatientRequest = {
+          name: sourcePatient.name,
+          surname: sourcePatient.surname,
+          dateOfBirth: sourcePatient.dateOfBirth,
+          gender: sourcePatient.gender,
+          homeAddress: sourcePatient.homeAddress,
+          allergies: sourcePatient.allergies ?? '',
+          diseases: sourcePatient.diseases ?? '',
+          profession: sourcePatient.profession ?? '',
+          phone: sourcePatient.phone,
+        };
         try {
           patient = await firstValueFrom(this.patientService.createPatient(profileRequest));
           existingPatients.push(patient);
@@ -312,9 +324,12 @@ export class PatientDataImportService {
     }
   }
 
-  private samePatient(patient: PatientResponse, request: CreatePatientRequest): boolean {
-    return this.sameName(patient.name, request.name) && this.sameName(patient.surname, request.surname) &&
-      patient.dateOfBirth === request.dateOfBirth && patient.phone.trim() === request.phone.trim();
+  private samePatient(patient: PatientResponse, source: PatientResponse): boolean {
+    return this.sameName(patient.name, source.name) && this.sameName(patient.surname, source.surname) &&
+      patient.dateOfBirth === source.dateOfBirth && patient.phone.trim() === source.phone.trim() &&
+      (!source.gender || !patient.gender || patient.gender === source.gender) &&
+      (!source.homeAddress?.trim() || !patient.homeAddress?.trim() ||
+        this.sameName(patient.homeAddress, source.homeAddress));
   }
 
   private sameName(a: string, b: string): boolean {

@@ -65,16 +65,27 @@ CREATE TABLE user_branches
     PRIMARY KEY (user_id, branch_id)
 );
 
+CREATE SEQUENCE patient_number_seq START WITH 1;
+
 CREATE TABLE patients
 (
-    id            UUID PRIMARY KEY      DEFAULT gen_random_uuid(),
-    name          VARCHAR(100) NOT NULL,
-    surname       VARCHAR(100) NOT NULL,
-    date_of_birth DATE         NOT NULL,
-    phone         VARCHAR(30)  NOT NULL,
-    created_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMPTZ
+    id             UUID PRIMARY KEY      DEFAULT gen_random_uuid(),
+    patient_number BIGINT        NOT NULL DEFAULT nextval('patient_number_seq') UNIQUE,
+    name           VARCHAR(100) NOT NULL,
+    surname        VARCHAR(100) NOT NULL,
+    date_of_birth  DATE          NOT NULL,
+    gender         VARCHAR(6),
+    home_address   VARCHAR(255),
+    allergies      TEXT,
+    diseases       TEXT,
+    profession     VARCHAR(150),
+    phone          VARCHAR(30)   NOT NULL,
+    created_at     TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMPTZ,
+    CONSTRAINT chk_patient_gender CHECK (gender IS NULL OR gender IN ('MALE', 'FEMALE'))
 );
+
+ALTER SEQUENCE patient_number_seq OWNED BY patients.patient_number;
 
 CREATE TABLE appointments
 (

@@ -6,7 +6,12 @@ import { finalize } from 'rxjs';
 import { BaseForm } from '../../../../components/base-form/base-form';
 import { CustomCalendar } from '../../../../components/custom-inputs/custom-calendar/custom-calendar';
 import {
+  CustomSelectInput,
+  SelectOption,
+} from '../../../../components/custom-inputs/custom-select-input/custom-select-input';
+import {
   CreatePatientRequest,
+  PatientGender,
   PatientResponse,
   UpdatePatientRequest,
 } from '../../../../core/models/Patient';
@@ -16,7 +21,7 @@ import { HttpErrorService } from '../../../../core/services/http-error-service';
 
 @Component({
   selector: 'app-patient-form',
-  imports: [ReactiveFormsModule, BaseForm, CustomCalendar, TranslatePipe],
+  imports: [ReactiveFormsModule, BaseForm, CustomCalendar, CustomSelectInput, TranslatePipe],
   templateUrl: './patient-form.html',
   styleUrl: './patient-form.css',
 })
@@ -37,10 +42,22 @@ export class PatientForm {
   readonly today = this.toLocalDateString(new Date());
   readonly currentYear = new Date().getFullYear();
 
+  get genderOptions(): SelectOption[] {
+    return [
+      { value: 'MALE', label: 'Male' },
+      { value: 'FEMALE', label: 'Female' },
+    ];
+  }
+
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(100)]],
     surname: ['', [Validators.required, Validators.maxLength(100)]],
     dateOfBirth: ['', Validators.required],
+    gender: ['' as PatientGender | '', Validators.required],
+    homeAddress: ['', [Validators.required, Validators.maxLength(255)]],
+    allergies: [''],
+    diseases: [''],
+    profession: ['', Validators.maxLength(150)],
     phone: ['', [Validators.required, Validators.maxLength(30)]],
   });
 
@@ -55,6 +72,11 @@ export class PatientForm {
         name: patient.name,
         surname: patient.surname,
         dateOfBirth: patient.dateOfBirth,
+        gender: patient.gender ?? '',
+        homeAddress: patient.homeAddress ?? '',
+        allergies: patient.allergies ?? '',
+        diseases: patient.diseases ?? '',
+        profession: patient.profession ?? '',
         phone: patient.phone,
       });
     });
@@ -78,6 +100,12 @@ export class PatientForm {
     this.form.controls.dateOfBirth.setValue('');
   }
 
+  setGender(value: string): void {
+    if (value === 'MALE' || value === 'FEMALE') {
+      this.form.controls.gender.setValue(value);
+    }
+  }
+
   submitForm(): void {
     if (this.isSubmitting()) return;
 
@@ -96,10 +124,15 @@ export class PatientForm {
       name: formValue.name.trim(),
       surname: formValue.surname.trim(),
       dateOfBirth: formValue.dateOfBirth,
+      gender: formValue.gender as PatientGender,
+      homeAddress: formValue.homeAddress.trim(),
+      allergies: formValue.allergies.trim(),
+      diseases: formValue.diseases.trim(),
+      profession: formValue.profession.trim(),
       phone: formValue.phone.trim(),
     };
 
-    if (!request.name || !request.surname || !request.phone) {
+    if (!request.name || !request.surname || !request.homeAddress || !request.phone || !request.gender) {
       this.validationError = 'Complete all required fields.';
       return;
     }
@@ -116,6 +149,11 @@ export class PatientForm {
           name: request.name,
           surname: request.surname,
           dateOfBirth: request.dateOfBirth,
+          gender: request.gender,
+          homeAddress: request.homeAddress,
+          allergies: request.allergies ?? '',
+          diseases: request.diseases ?? '',
+          profession: request.profession ?? '',
           phone: request.phone,
         } satisfies UpdatePatientRequest)
       : this.patientService.createPatient(request);
