@@ -1,10 +1,6 @@
 -- =====================================================================
--- Full schema for a fresh database (PostgreSQL 13+, uses gen_random_uuid()).
--- Includes the end state of:
---   V1__separate_tooth_condition_and_presence
---   V2__single_current_tooth_per_position
---   V3__tooth_history_events
--- Do NOT run V1-V3 on top of this; they are only for upgrading old databases.
+-- Complete baseline schema for a fresh Mona Dent database.
+-- Future schema changes should be added as new versioned migrations (V2+).
 -- =====================================================================
 
 
@@ -21,18 +17,28 @@ CREATE TABLE branches
     updated_at TIMESTAMPTZ
 );
 
+CREATE TABLE organization_settings
+(
+    id   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(200) NOT NULL DEFAULT '',
+    idno VARCHAR(50)  NOT NULL DEFAULT ''
+);
+
+INSERT INTO organization_settings (name, idno)
+VALUES ('', '');
+
 CREATE TABLE ip_allowlist_entries
 (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name       VARCHAR(100) NOT NULL,
-    ip_address VARCHAR(15) NOT NULL UNIQUE,
+    ip_address VARCHAR(18) NOT NULL UNIQUE,
 
     CONSTRAINT chk_ip_allowlist_ipv4 CHECK (
-        ip_address ~ '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
-            AND split_part(ip_address, '.', 1)::INTEGER BETWEEN 0 AND 255
-            AND split_part(ip_address, '.', 2)::INTEGER BETWEEN 0 AND 255
-            AND split_part(ip_address, '.', 3)::INTEGER BETWEEN 0 AND 255
-            AND split_part(ip_address, '.', 4)::INTEGER BETWEEN 0 AND 255
+        ip_address ~ '^([0-9]{1,3}\.){3}[0-9]{1,3}(/([0-9]|[12][0-9]|3[0-2]))?$'
+            AND split_part(split_part(ip_address, '/', 1), '.', 1)::INTEGER BETWEEN 0 AND 255
+            AND split_part(split_part(ip_address, '/', 1), '.', 2)::INTEGER BETWEEN 0 AND 255
+            AND split_part(split_part(ip_address, '/', 1), '.', 3)::INTEGER BETWEEN 0 AND 255
+            AND split_part(split_part(ip_address, '/', 1), '.', 4)::INTEGER BETWEEN 0 AND 255
         )
 );
 
@@ -67,16 +73,27 @@ CREATE TABLE user_branches
     PRIMARY KEY (user_id, branch_id)
 );
 
+CREATE SEQUENCE patient_number_seq START WITH 1;
+
 CREATE TABLE patients
 (
-    id            UUID PRIMARY KEY      DEFAULT gen_random_uuid(),
-    name          VARCHAR(100) NOT NULL,
-    surname       VARCHAR(100) NOT NULL,
-    date_of_birth DATE         NOT NULL,
-    phone         VARCHAR(30)  NOT NULL,
-    created_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMPTZ
+    id             UUID PRIMARY KEY      DEFAULT gen_random_uuid(),
+    patient_number BIGINT        NOT NULL DEFAULT nextval('patient_number_seq') UNIQUE,
+    name           VARCHAR(100) NOT NULL,
+    surname        VARCHAR(100) NOT NULL,
+    date_of_birth  DATE          NOT NULL,
+    gender         VARCHAR(6),
+    home_address   VARCHAR(255),
+    allergies      TEXT,
+    diseases       TEXT,
+    profession     VARCHAR(150),
+    phone          VARCHAR(30)   NOT NULL,
+    created_at     TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMPTZ,
+    CONSTRAINT chk_patient_gender CHECK (gender IS NULL OR gender IN ('MALE', 'FEMALE'))
 );
+
+ALTER SEQUENCE patient_number_seq OWNED BY patients.patient_number;
 
 CREATE TABLE appointments
 (
@@ -136,7 +153,7 @@ CREATE TABLE patient_files
 
 
 -- ---------------------------------------------------------------------
--- Odontogram: current teeth (V1 presence_status, V2 is_current)
+-- Odontogram: current teeth with composable clinical findings
 -- ---------------------------------------------------------------------
 
 CREATE TABLE patient_teeth
@@ -145,8 +162,8 @@ CREATE TABLE patient_teeth
     patient_id      UUID        NOT NULL REFERENCES patients (id) ON DELETE CASCADE,
     tooth_number    INTEGER     NOT NULL,
     tooth_type      VARCHAR(20) NOT NULL,
-    status          VARCHAR(30) NOT NULL DEFAULT 'NOT_ASSESSED',
-    presence_status VARCHAR(30) NOT NULL DEFAULT 'UNKNOWN',
+    findings        JSONB       NOT NULL DEFAULT '["NOT_ASSESSED"]'::jsonb,
+    mobility_grade  INTEGER,
     is_current      BOOLEAN     NOT NULL DEFAULT TRUE,
     notes           TEXT,
     updated_by      UUID REFERENCES users (id),
@@ -163,20 +180,21 @@ CREATE TABLE patient_teeth
                                                         71, 72, 73, 74, 75,
                                                         81, 82, 83, 84, 85)),
 
-    CONSTRAINT chk_tooth_status CHECK (status IN ('NOT_ASSESSED',
-                                                  'HEALTHY',
-                                                  'CARIES_ACTIVE',
-                                                  'CARIES_TREATED',
-                                                  'ROOT_PROBLEM',
-                                                  'ROOT_TREATED',
-                                                  'IMPLANT',
-                                                  'CROWN')),
-
-    CONSTRAINT chk_tooth_presence_status CHECK (presence_status IN ('UNKNOWN',
-                                                                    'ERUPTED',
-                                                                    'UNERUPTED',
-                                                                    'CONGENITALLY_MISSING',
-                                                                    'EXTRACTED'))
+    CONSTRAINT chk_patient_tooth_findings_array CHECK (jsonb_typeof(findings) = 'array'),
+    CONSTRAINT chk_patient_tooth_findings_compatible CHECK (
+        (NOT (findings ? 'NOT_ASSESSED') OR jsonb_array_length(findings) = 1)
+        AND (NOT (findings ? 'MISSING') OR jsonb_array_length(findings) = 1)
+        AND (NOT (findings ? 'HEALTHY') OR NOT (findings ?| ARRAY[
+            'CARIES', 'PULPITIS', 'PERIODONTITIS', 'PERIODONTAL_DISEASE', 'ROOT_PROBLEM'
+        ]))
+        AND (NOT (findings ? 'IMPLANT') OR NOT (findings ?| ARRAY[
+            'CARIES', 'PULPITIS', 'PERIODONTITIS', 'PERIODONTAL_DISEASE', 'ROOT_PROBLEM', 'FILLING', 'CROWN'
+        ]))
+    ),
+    CONSTRAINT chk_patient_tooth_mobility_grade CHECK (
+        (mobility_grade IS NULL OR mobility_grade BETWEEN 1 AND 3)
+        AND (mobility_grade IS NULL OR NOT (findings ? 'MISSING'))
+    )
 );
 
 -- One current tooth per position. Primary teeth 5x-8x map onto the permanent
@@ -195,55 +213,65 @@ CREATE UNIQUE INDEX uq_patient_teeth_current_position
 
 
 -- ---------------------------------------------------------------------
--- Auto-create the dental chart when a patient is inserted (V1 + V2 version)
+-- Seed an age-appropriate dental chart
 -- ---------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION initialize_patient_dental_chart()
-    RETURNS TRIGGER
+CREATE OR REPLACE FUNCTION seed_patient_dental_chart(target_patient_id UUID, target_birth_date DATE)
+    RETURNS VOID
     LANGUAGE plpgsql
 AS
 $$
 DECLARE
     patient_age INTEGER;
 BEGIN
-    IF NEW.date_of_birth > CURRENT_DATE THEN
+    IF target_birth_date > CURRENT_DATE THEN
         RAISE EXCEPTION 'Date of birth cannot be in the future'
             USING ERRCODE = '22007';
     END IF;
 
-    patient_age := EXTRACT(YEAR FROM age(CURRENT_DATE, NEW.date_of_birth));
+    patient_age := EXTRACT(YEAR FROM age(CURRENT_DATE, target_birth_date));
 
     IF patient_age <= 5 THEN
         -- Full primary dentition
-        INSERT INTO patient_teeth (patient_id, tooth_number, tooth_type, status, presence_status)
-        SELECT NEW.id, q.quadrant * 10 + p.position, 'PRIMARY', 'NOT_ASSESSED', 'UNKNOWN'
+        INSERT INTO patient_teeth (patient_id, tooth_number, tooth_type)
+        SELECT target_patient_id, q.quadrant * 10 + p.position, 'PRIMARY'
         FROM generate_series(5, 8) AS q(quadrant)
                  CROSS JOIN generate_series(1, 5) AS p(position);
     ELSIF patient_age <= 9 THEN
         -- Mixed dentition: primary canines/molars (positions 3-5) + first permanent incisors and molars
-        INSERT INTO patient_teeth (patient_id, tooth_number, tooth_type, status, presence_status)
-        SELECT NEW.id, q.quadrant * 10 + p.position, 'PRIMARY', 'NOT_ASSESSED', 'UNKNOWN'
+        INSERT INTO patient_teeth (patient_id, tooth_number, tooth_type)
+        SELECT target_patient_id, q.quadrant * 10 + p.position, 'PRIMARY'
         FROM generate_series(5, 8) AS q(quadrant)
                  CROSS JOIN (VALUES (3), (4), (5)) AS p(position);
 
-        INSERT INTO patient_teeth (patient_id, tooth_number, tooth_type, status, presence_status)
-        SELECT NEW.id, q.quadrant * 10 + p.position, 'PERMANENT', 'NOT_ASSESSED', 'UNKNOWN'
+        INSERT INTO patient_teeth (patient_id, tooth_number, tooth_type)
+        SELECT target_patient_id, q.quadrant * 10 + p.position, 'PERMANENT'
         FROM generate_series(1, 4) AS q(quadrant)
                  CROSS JOIN (VALUES (1), (2), (6)) AS p(position);
     ELSIF patient_age <= 17 THEN
         -- Permanent teeth without wisdom teeth
-        INSERT INTO patient_teeth (patient_id, tooth_number, tooth_type, status, presence_status)
-        SELECT NEW.id, q.quadrant * 10 + p.position, 'PERMANENT', 'NOT_ASSESSED', 'UNKNOWN'
+        INSERT INTO patient_teeth (patient_id, tooth_number, tooth_type)
+        SELECT target_patient_id, q.quadrant * 10 + p.position, 'PERMANENT'
         FROM generate_series(1, 4) AS q(quadrant)
                  CROSS JOIN generate_series(1, 7) AS p(position);
     ELSE
         -- Full permanent dentition
-        INSERT INTO patient_teeth (patient_id, tooth_number, tooth_type, status, presence_status)
-        SELECT NEW.id, q.quadrant * 10 + p.position, 'PERMANENT', 'NOT_ASSESSED', 'UNKNOWN'
+        INSERT INTO patient_teeth (patient_id, tooth_number, tooth_type)
+        SELECT target_patient_id, q.quadrant * 10 + p.position, 'PERMANENT'
         FROM generate_series(1, 4) AS q(quadrant)
                  CROSS JOIN generate_series(1, 8) AS p(position);
     END IF;
+END;
+$$;
 
+-- Auto-create the dental chart when a patient is inserted
+CREATE OR REPLACE FUNCTION initialize_patient_dental_chart()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    PERFORM seed_patient_dental_chart(NEW.id, NEW.date_of_birth);
     RETURN NEW;
 END;
 $$;
@@ -254,9 +282,44 @@ CREATE TRIGGER trg_initialize_patient_dental_chart
     FOR EACH ROW
 EXECUTE FUNCTION initialize_patient_dental_chart();
 
+-- Rebuild only untouched auto-generated charts after a birthdate correction.
+CREATE OR REPLACE FUNCTION refresh_unmodified_patient_dental_chart()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    IF NEW.date_of_birth IS NOT DISTINCT FROM OLD.date_of_birth THEN
+        RETURN NEW;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM patient_teeth
+        WHERE patient_id = NEW.id AND updated_by IS NOT NULL
+    ) OR EXISTS (
+        SELECT 1
+        FROM tooth_history history
+                 JOIN patient_teeth tooth ON tooth.id = history.patient_tooth_id
+        WHERE tooth.patient_id = NEW.id
+    ) THEN
+        RETURN NEW;
+    END IF;
+
+    DELETE FROM patient_teeth WHERE patient_id = NEW.id;
+    PERFORM seed_patient_dental_chart(NEW.id, NEW.date_of_birth);
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_refresh_unmodified_patient_dental_chart
+    AFTER UPDATE OF date_of_birth
+    ON patients
+    FOR EACH ROW
+EXECUTE FUNCTION refresh_unmodified_patient_dental_chart();
+
 
 -- ---------------------------------------------------------------------
--- Odontogram: change history (V1 constraints, V3 event columns)
+-- Odontogram: change history
 -- ---------------------------------------------------------------------
 
 CREATE TABLE tooth_history
@@ -264,11 +327,11 @@ CREATE TABLE tooth_history
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_tooth_id    UUID        NOT NULL REFERENCES patient_teeth (id) ON DELETE CASCADE,
     visit_id            UUID REFERENCES visits (id),
-    old_status          VARCHAR(30) NOT NULL,
-    new_status          VARCHAR(30) NOT NULL,
+    old_findings        JSONB       NOT NULL DEFAULT '["NOT_ASSESSED"]'::jsonb,
+    new_findings        JSONB       NOT NULL DEFAULT '["NOT_ASSESSED"]'::jsonb,
+    old_mobility_grade  INTEGER,
+    new_mobility_grade  INTEGER,
     event_type          VARCHAR(40),
-    old_presence_status VARCHAR(30),
-    new_presence_status VARCHAR(30),
     old_tooth_type      VARCHAR(20),
     new_tooth_type      VARCHAR(20),
     old_tooth_number    INTEGER,
@@ -278,26 +341,11 @@ CREATE TABLE tooth_history
     changed_by          UUID        NOT NULL REFERENCES users (id),
     changed_at          TIMESTAMPTZ,
 
-    -- 'EXTRACTED' is still allowed here so old history rows (from before presence_status existed) stay valid.
-    CONSTRAINT chk_tooth_history_old_status CHECK (old_status IN ('NOT_ASSESSED',
-                                                                  'HEALTHY',
-                                                                  'CARIES_ACTIVE',
-                                                                  'CARIES_TREATED',
-                                                                  'ROOT_PROBLEM',
-                                                                  'ROOT_TREATED',
-                                                                  'IMPLANT',
-                                                                  'CROWN',
-                                                                  'EXTRACTED')),
-
-    CONSTRAINT chk_tooth_history_new_status CHECK (new_status IN ('NOT_ASSESSED',
-                                                                  'HEALTHY',
-                                                                  'CARIES_ACTIVE',
-                                                                  'CARIES_TREATED',
-                                                                  'ROOT_PROBLEM',
-                                                                  'ROOT_TREATED',
-                                                                  'IMPLANT',
-                                                                  'CROWN',
-                                                                  'EXTRACTED'))
+    CONSTRAINT chk_tooth_history_findings_arrays CHECK (
+        jsonb_typeof(old_findings) = 'array' AND jsonb_typeof(new_findings) = 'array'
+    ),
+    CONSTRAINT chk_tooth_history_old_mobility_grade CHECK (old_mobility_grade IS NULL OR old_mobility_grade BETWEEN 1 AND 3),
+    CONSTRAINT chk_tooth_history_new_mobility_grade CHECK (new_mobility_grade IS NULL OR new_mobility_grade BETWEEN 1 AND 3)
 );
 
 

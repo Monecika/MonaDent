@@ -4,7 +4,7 @@ This is the Java API for MonaDent, a dental clinic management application. It ha
 
 ## Stack
 
-The backend uses Java 17, Spring Boot, Spring Security with JWT authentication, PostgreSQL, and Flyway migrations. API contracts are maintained as OpenAPI files in `src/main/resources/contracts`; the endpoints are also described in [API.md](API.md).
+The backend uses Java 17, Spring Boot, Spring Security with JWT authentication, PostgreSQL, and Flyway migrations. Fresh databases are created from the complete V1 schema; add future database changes as new versioned migrations starting at V2. API contracts are maintained as OpenAPI files in `src/main/resources/contracts`; the endpoints are also described in [API.md](API.md).
 
 ## Run locally
 

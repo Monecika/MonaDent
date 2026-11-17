@@ -1,10 +1,6 @@
 -- =====================================================================
--- Full schema for a fresh database (PostgreSQL 13+, uses gen_random_uuid()).
--- Includes the end state of:
---   V1__separate_tooth_condition_and_presence
---   V2__single_current_tooth_per_position
---   V3__tooth_history_events
--- Do NOT run V1-V3 on top of this; they are only for upgrading old databases.
+-- Complete schema snapshot for a fresh Mona Dent database.
+-- The Flyway baseline lives in db/migration/V1__initial_schema.sql.
 -- =====================================================================
 
 
@@ -57,6 +53,8 @@ CREATE TABLE users
     calendar_color VARCHAR(7),
     role           VARCHAR(30)  NOT NULL,
     password_hash  VARCHAR(255) NOT NULL,
+    must_change_password BOOLEAN NOT NULL DEFAULT FALSE,
+    preferred_language VARCHAR(2) NOT NULL DEFAULT 'ro',
     status         VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
     created_at     TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at     TIMESTAMPTZ,

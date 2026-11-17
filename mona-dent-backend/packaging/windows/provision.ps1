@@ -703,31 +703,6 @@ if (-not (Test-Path $ConfigPath)) {
     }
     Write-InstallLog "Upgrade backup completed at $backupPath."
 
-    # V1 was accidentally edited after this release had already been applied.
-    # The bundled app's V1 checksum is the resolved value below. Repair only the
-    # known prior V1 checksum so Flyway can validate and apply the forward V5
-    # migration. The database backup above is complete before history changes.
-    $flywayRepairSql = @'
-UPDATE public.flyway_schema_history
-SET checksum = -1523014662
-WHERE version = '1'
-  AND checksum = -1897551104
-  AND success = TRUE;
-'@
-    $env:PGPASSWORD = $dbPassword
-    $env:PGCLIENTENCODING = 'UTF8'
-    try {
-        $flywayRepairOutput = & (Join-Path $PostgreSqlBin 'psql.exe') -w -q -v ON_ERROR_STOP=1 `
-            -h 127.0.0.1 -p 5432 -U mona_dent_app -d clinic_db -c $flywayRepairSql 2>&1
-        $flywayRepairExitCode = $LASTEXITCODE
-        if ($flywayRepairExitCode -ne 0) {
-            foreach ($line in $flywayRepairOutput) { Write-InstallLog "Flyway history repair: $line" }
-            throw "Could not repair the known V1 Flyway checksum (psql exit code $flywayRepairExitCode). The database backup is available at $backupPath."
-        }
-    } finally {
-        Remove-Item Env:\PGPASSWORD, Env:\PGCLIENTENCODING -ErrorAction SilentlyContinue
-    }
-    Write-InstallLog 'Repaired the known V1 Flyway checksum so the forward schema migration can run.'
 }
 
 @('[InternetShortcut]', 'URL=http://127.0.0.1:8080') |

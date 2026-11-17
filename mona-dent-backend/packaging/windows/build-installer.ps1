@@ -67,21 +67,8 @@ if (-not (Test-Path (Join-Path $BackendDirectory "target/$JarName"))) {
 $BackendJar = Join-Path $BackendDirectory "target/$JarName"
 $JarEntries = & jar tf $BackendJar
 if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the backend jar for database migrations.' }
-foreach ($migration in @(
-    'V1__initial_schema.sql',
-    'V2__add_user_setup_fields.sql',
-    'V3__restore_missing_appointments_table.sql',
-    'V4__ensure_appointments_table.sql',
-    'V5__use_integer_for_patient_tooth_number.sql',
-    'V6__use_clinical_tooth_statuses.sql',
-    'V7__compose_tooth_findings.sql',
-    'V8__refresh_unmodified_dental_chart_on_birthdate_change.sql',
-    'V9__allow_ipv4_network_ranges.sql',
-    'V10__default_unassessed_patient_tooth_findings.sql'
-)) {
-    if ($JarEntries -notcontains "BOOT-INF/classes/db/migration/$migration") {
-        throw "The backend jar is missing database migration '$migration'; refusing to build an installer that cannot repair the database."
-    }
+if ($JarEntries -notcontains 'BOOT-INF/classes/db/migration/V1__initial_schema.sql') {
+    throw 'The backend jar is missing the initial database schema migration; refusing to build an installer that cannot initialize PostgreSQL.'
 }
 foreach ($flywayLibrary in @('spring-boot-flyway', 'flyway-core', 'flyway-database-postgresql')) {
     if (-not ($JarEntries | Where-Object { $_ -match "^BOOT-INF/lib/$flywayLibrary-[^/]+\.jar$" })) {

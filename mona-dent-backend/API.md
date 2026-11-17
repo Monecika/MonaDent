@@ -248,9 +248,10 @@ and with each other.
 
 `PUT /api/patients/{patientId}/teeth/{toothId}` updates the findings, mobility
 grade, and notes. The database trigger is the single source of chart
-initialization, so the API does not separately seed teeth. Existing databases
-are upgraded by Flyway migrations V6–V8; new databases should be created
-from the updated `sql.sql`.
+initialization, so the API does not separately seed teeth. Fresh databases use
+the complete Flyway baseline in
+`src/main/resources/db/migration/V1__initial_schema.sql`. Add future schema
+changes as new versioned migrations starting at V2.
 
 ## Appointments
 
