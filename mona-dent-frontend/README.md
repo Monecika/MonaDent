@@ -1,64 +1,24 @@
-# MonaDentFrontend
+# MonaDent frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.12.
+This folder contains the Angular web app for MonaDent. It provides the clinic dashboard, appointment calendar, patient records and dental charts, file management, medical record PDFs, and screens for account and clinic administration.
 
-## Development server
+The interface is built with Angular 21 and TypeScript. It uses Tailwind CSS for styling and FullCalendar for the appointment calendar. API calls are made through shared services in `src/app/core/services`.
 
-To start a local development server, run:
+## Run locally
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Languages
-
-The interface supports Romanian (default), Russian, and English. Choose a language from the
-navbar; the selection is saved to the signed-in user's profile and restored on the next visit.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Start the MonaDent backend on `http://localhost:8080`, then run from this directory:
 
 ```bash
-ng generate component component-name
+npm install
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Open [http://localhost:4200](http://localhost:4200). The development server proxies API requests from `/api` to the backend, as configured in `proxy.conf.json`.
+
+## Build
 
 ```bash
-ng generate --help
+npm run build
 ```
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+The production files are written to `dist/`. For the full application and backend setup, see the repository [README](../README.md).
