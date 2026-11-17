@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../node_modules/fullcalendar/chunks/be24a822.js"],
-  "sourcesContent": ["var l61 = {\n    code: 'ru',\n    week: {\n        dow: 1, // Monday is the first day of the week.\n        doy: 4, // The week that contains Jan 4th is the first week of the year.\n    },\n    prevText: 'Пред',\n    nextText: 'След',\n    todayText: 'Сегодня',\n    yearText: 'Год',\n    monthText: 'Месяц',\n    weekTextLong: 'Неделя',\n    weekTextShort: 'Нед',\n    dayText: 'День',\n    listText: 'Повестка дня',\n    allDayText: 'Весь\\nдень',\n    moreLinkText(n) {\n        return '+ ещё ' + n;\n    },\n    noEventsText: 'Нет событий для отображения',\n};\n\nexport { l61 as l };\n"],
-  "mappings": ";;;AAAA,IAAI,MAAM;AAAA,EACN,MAAM;AAAA,EACN,MAAM;AAAA,IACF,KAAK;AAAA;AAAA,IACL,KAAK;AAAA;AAAA,EACT;AAAA,EACA,UAAU;AAAA,EACV,UAAU;AAAA,EACV,WAAW;AAAA,EACX,UAAU;AAAA,EACV,WAAW;AAAA,EACX,cAAc;AAAA,EACd,eAAe;AAAA,EACf,SAAS;AAAA,EACT,UAAU;AAAA,EACV,YAAY;AAAA,EACZ,aAAa,GAAG;AACZ,WAAO,WAAW;AAAA,EACtB;AAAA,EACA,cAAc;AAClB;",
-  "names": []
-}

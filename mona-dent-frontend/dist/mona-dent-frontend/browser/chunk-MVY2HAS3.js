@@ -1,2 +1,0 @@
-import"./chunk-7CGTOI24.js";var t={code:"ro",week:{dow:1,doy:7},prevText:"precedent\u0103",nextText:"urm\u0103toare",todayText:"Azi",yearText:"An",monthText:"Lun\u0103",weekTextLong:"S\u0103pt\u0103m\xE2n\u0103",weekTextShort:"S\u0103pt",dayText:"Zi",listText:"Agend\u0103",allDayText:`Toat\u0103
-ziua`,moreLinkText(e){return"+alte "+e},noEventsText:"Nu exist\u0103 evenimente de afi\u0219at"};export{t as default};
