@@ -658,9 +658,6 @@ if (-not (Test-Path $ConfigPath)) {
     ) | Set-Content -Path $ConfigPath -Encoding ascii
     Remove-Item $BootstrapPath -Force -ErrorAction SilentlyContinue
     Write-InstallLog 'Created the Mona Dent application configuration.'
-
-    @('[InternetShortcut]', 'URL=http://localhost:8080') | Set-Content -Path (Join-Path $InstallDirectory 'MonaDent.url') -Encoding ascii
-
 } else {
     Write-InstallLog 'Existing installation detected; backing up before upgrade.'
     if (-not $postgresService) { throw "Mona Dent configuration exists, but PostgreSQL service '$ServiceName' is missing. No database files were changed." }
@@ -733,6 +730,10 @@ WHERE version = '1'
     Write-InstallLog 'Repaired the known V1 Flyway checksum so the forward schema migration can run.'
 }
 
+@('[InternetShortcut]', 'URL=http://127.0.0.1:8080') |
+    Set-Content -Path (Join-Path $InstallDirectory 'MonaDent.url') -Encoding ascii
+Write-InstallLog 'Created or refreshed the Mona Dent desktop shortcut URL.'
+
 if (Test-Path $PostgreSqlInstaller) {
     Remove-Item $PostgreSqlInstaller -Force
 }
@@ -764,6 +765,22 @@ Write-InstallLog 'Mona Dent service registered.'
 & $serviceWrapper start
 if ($LASTEXITCODE -ne 0) { throw 'Could not start the Mona Dent Windows service.' }
 Write-InstallLog 'Mona Dent service started.'
+
+$applicationReady = $false
+for ($attempt = 0; $attempt -lt 90; $attempt++) {
+    try {
+        $response = Invoke-WebRequest -Uri 'http://127.0.0.1:8080/' -TimeoutSec 2 -UseBasicParsing
+        if ($response.StatusCode -eq 200) {
+            $applicationReady = $true
+            break
+        }
+    } catch { }
+    if (-not $applicationReady) { Start-Sleep -Seconds 2 }
+}
+if (-not $applicationReady) {
+    throw "Mona Dent service started, but the web app did not respond at http://127.0.0.1:8080/. Check '$LogDirectory' for service logs."
+}
+Write-InstallLog 'Mona Dent web app is responding at http://127.0.0.1:8080/.'
 
 try {
     if (-not (Get-NetFirewallRule -DisplayName 'Mona Dent application' -ErrorAction SilentlyContinue)) {

@@ -34,6 +34,7 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 Source: "{#AppImageDir}\*"; DestDir: "{app}\app"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#PostgreSqlInstaller}"; DestDir: "{app}\_installer"; DestName: "postgresql-installer.exe"; Flags: ignoreversion
 Source: "{#WinSWExecutable}"; DestDir: "{app}"; DestName: "MonaDentService.exe"; Flags: ignoreversion
+Source: "MonaDent.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "assets\mona-dent.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "provision.ps1"; DestDir: "{app}\_installer"; Flags: ignoreversion
 Source: "uninstall.ps1"; DestDir: "{app}\_installer"; Flags: ignoreversion
