@@ -1,8 +1,9 @@
-import { Component, ElementRef, inject, OnInit } from '@angular/core';
+import { Component, effect, ElementRef, inject, OnInit } from '@angular/core';
 import { LucideBuildingComplex, LucideChevronDown } from '@lucide/angular';
 import { Loader } from '../../loader/loader';
 import { BranchStore } from '../../../core/stores/branch-store';
 import { Branch } from '../../../core/models/Branch';
+import { UserStore } from '../../../core/stores/user-store';
 import { TranslatePipe } from '../../../core/pipes/translate-pipe';
 
 @Component({
@@ -17,13 +18,19 @@ import { TranslatePipe } from '../../../core/pipes/translate-pipe';
 })
 export class CustomSelect implements OnInit {
   readonly branchStore = inject(BranchStore);
+  private readonly userStore = inject(UserStore);
 
-  constructor(private readonly elementRef: ElementRef<HTMLElement>) {}
+  constructor(private readonly elementRef: ElementRef<HTMLElement>) {
+    effect(() => {
+      const userId = this.userStore.user()?.userId;
+      if (userId) this.branchStore.loadBranches(userId);
+    });
+  }
 
   isOpen = false;
 
   ngOnInit(): void {
-    this.branchStore.loadBranches();
+    this.userStore.loadUser();
   }
 
   selectSubsidiary(branch: Branch): void {

@@ -151,10 +151,67 @@
 }
 
 .tooth-caption {
-  min-height: 20px;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 24px;
   text-align: center;
-  font-size: 8px;
-  line-height: 12px;
+  font-size: 10px;
+  line-height: 14px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  .tooth-arch-row {
+    min-width: 760px;
+  }
+
+  .tooth-cell {
+    flex: 0 0 42px;
+    width: 42px;
+  }
+
+  .tooth-caption {
+    min-height: 36px;
+    line-height: 12px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .tooth-cell {
+    font-size: clamp(10px, 0.75vw, 14px);
+  }
+
+  .tooth-shape {
+    max-width: clamp(36px, 3.6vw, 72px);
+    height: clamp(48px, 4.8vw, 84px);
+  }
+
+  .tooth-diagnosis-mark {
+    font-size: clamp(5px, 0.45vw, 9px);
+  }
+
+  .tooth-missing-icon {
+    width: clamp(28px, 2vw, 36px);
+    height: clamp(28px, 2vw, 36px);
+  }
+
+  .tooth-implant-mark {
+    width: clamp(11px, 0.75vw, 16px);
+    height: clamp(18px, 1.2vw, 26px);
+  }
+
+  .tooth-mobility-mark {
+    min-width: clamp(15px, 0.9vw, 20px);
+    height: clamp(15px, 0.9vw, 20px);
+    font-size: clamp(7px, 0.45vw, 10px);
+  }
+
+  .tooth-caption {
+    min-height: 2.4em;
+    font-size: clamp(10px, 0.75vw, 14px);
+    line-height: 1.2;
+  }
 }
 
 .tooth-problem .tooth-caption {

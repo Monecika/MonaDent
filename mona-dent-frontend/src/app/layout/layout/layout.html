@@ -1,9 +1,13 @@
 <div class="flex min-h-screen flex-col lg:flex-row">
-  <header class="flex items-center justify-between border-b border-border px-4 py-3 lg:hidden">
-    <div class="flex min-w-0 items-center gap-2">
+  <header class="sticky top-0 z-[60] flex items-center justify-between border-b border-border bg-white px-4 py-3 lg:hidden">
+    <a
+      routerLink="/"
+      (click)="mobileNavOpen.set(false)"
+      class="flex min-w-0 items-center gap-2 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+    >
       <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-sm font-bold text-white">M</span>
       <span class="truncate font-semibold text-accent">Monecify <span class="rounded-md bg-background px-2 py-1 text-secondary">Dent</span></span>
-    </div>
+    </a>
     <button
       type="button"
       class="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border text-primary"
@@ -20,7 +24,7 @@
   </header>
 
   <app-aside
-    class="w-full shrink-0 lg:static lg:w-80 lg:shadow-none"
+    class="w-full shrink-0 lg:static lg:w-80 lg:shadow-none min-[1920px]:w-[22rem]"
     [class.fixed]="mobileNavOpen()"
     [class.left-0]="mobileNavOpen()"
     [class.right-0]="mobileNavOpen()"

@@ -95,7 +95,7 @@
         }
       }
 
-      <div class="flex min-w-[690px] justify-center gap-1">
+      <div class="tooth-arch-row flex min-w-[690px] justify-center gap-1 min-[1920px]:gap-0">
         @for (tooth of upperTeeth(); track tooth.number; let index = $index) {
           <button
             type="button"
@@ -182,7 +182,7 @@
         <span class="h-px flex-1 border-t border-dashed border-border"></span>
       </div>
 
-      <div class="flex min-w-[690px] justify-center gap-1 px-1 pt-3">
+      <div class="tooth-arch-row flex min-w-[690px] justify-center gap-1 px-1 pt-3 min-[1920px]:gap-0">
         @for (tooth of lowerTeeth(); track tooth.number; let index = $index) {
           <button
             type="button"

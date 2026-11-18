@@ -1,14 +1,28 @@
-import { Component, computed, ElementRef, inject, OnInit } from '@angular/core';
+import { Component, computed, ElementRef, inject, input, OnInit, output } from '@angular/core';
 import { LucideChevronDown, LucideLogOut, LucideSettings } from '@lucide/angular';
 import { Router, RouterLink } from '@angular/router';
 import { Loader } from '../../components/loader/loader';
+import { CustomSelect } from '../../components/custom-inputs/custom-select/custom-select';
+import {
+  CustomSelectInput,
+  SelectOption,
+} from '../../components/custom-inputs/custom-select-input/custom-select-input';
 import { UserStore } from '../../core/stores/user-store';
 import { BranchStore } from '../../core/stores/branch-store';
 import { TranslatePipe } from '../../core/pipes/translate-pipe';
 
 @Component({
   selector: 'app-user-dropdown',
-  imports: [LucideChevronDown, RouterLink, LucideSettings, LucideLogOut, Loader, TranslatePipe],
+  imports: [
+    LucideChevronDown,
+    RouterLink,
+    LucideSettings,
+    LucideLogOut,
+    Loader,
+    CustomSelect,
+    CustomSelectInput,
+    TranslatePipe,
+  ],
   templateUrl: './user-dropdown.html',
   styleUrl: './user-dropdown.css',
   host: {
@@ -25,6 +39,10 @@ export class UserDropdown implements OnInit {
 
   readonly user = this.userStore.user;
   readonly isLoading = this.userStore.isLoading;
+  readonly languages = input<SelectOption[]>([]);
+  readonly selectedLanguage = input('en');
+  readonly languageSaveError = input('');
+  readonly languageChange = output<SelectOption>();
 
   readonly userInitials = computed(() => {
     const user = this.user();

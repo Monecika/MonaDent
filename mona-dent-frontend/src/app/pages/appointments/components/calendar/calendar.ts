@@ -4,7 +4,17 @@ import timeGridPlugin from '@fullcalendar/angular/timegrid';
 import interactionPlugin from '@fullcalendar/angular/interaction';
 import themePlugin from '@fullcalendar/angular/themes/monarch';
 import { LucideChevronLeft, LucideChevronRight } from '@lucide/angular';
-import { catchError, EMPTY, filter, finalize, forkJoin, switchMap } from 'rxjs';
+import {
+  catchError,
+  EMPTY,
+  exhaustMap,
+  filter,
+  finalize,
+  forkJoin,
+  map,
+  switchMap,
+  timer,
+} from 'rxjs';
 import {
   AppointmentResponse,
   AppointmentStatus,
@@ -219,10 +229,25 @@ export class CalendarComponent implements OnInit, AfterViewInit {
     this.selectedBranch$
       .pipe(
         filter((branch): branch is Branch => branch !== null),
-        switchMap((branch) => this.loadAppointments(branch)),
+        switchMap((branch) =>
+          timer(0, 5_000).pipe(
+            map((tick) => tick > 0),
+            filter((background) =>
+              !background || (!this.isFormOpen && !this.isSavingChange && !this.isConfirmPopupOpen),
+            ),
+            exhaustMap((background) =>
+              this.loadAppointments(branch, background).pipe(
+                map((result) => ({ ...result, background })),
+              ),
+            ),
+          ),
+        ),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(({ appointments, doctors }) => this.setAppointments(appointments, doctors));
+      .subscribe(({ appointments, doctors, background }) => {
+        if (background && (this.isFormOpen || this.isSavingChange || this.isConfirmPopupOpen)) return;
+        this.setAppointments(appointments, doctors);
+      });
   }
 
   ngAfterViewInit(): void {
@@ -288,9 +313,11 @@ export class CalendarComponent implements OnInit, AfterViewInit {
     this.applyFilter();
   }
 
-  private loadAppointments(branch: Branch) {
-    this.isLoading.set(true);
-    this.changeError.set('');
+  private loadAppointments(branch: Branch, background = false) {
+    if (!background) {
+      this.isLoading.set(true);
+      this.changeError.set('');
+    }
 
     return forkJoin({
       appointments: this.appointmentService.getAppointments(branch.branchId),
@@ -304,7 +331,7 @@ export class CalendarComponent implements OnInit, AfterViewInit {
         return EMPTY;
       }),
       finalize(() => {
-        this.isLoading.set(false);
+        if (!background) this.isLoading.set(false);
         this.cdr.markForCheck();
       }),
     );

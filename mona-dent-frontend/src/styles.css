@@ -32,6 +32,34 @@ body {
   margin: 0;
 }
 
+@media (min-width: 1920px) {
+  html {
+    font-size: 19px;
+  }
+
+  :root {
+    --spacing: 0.2105rem;
+  }
+
+  [class~='text-[10px]'] {
+    font-size: 0.75rem;
+  }
+
+  [class~='text-[9px]'] {
+    font-size: 0.6875rem;
+  }
+}
+
+@media (min-width: 2560px) {
+  html {
+    font-size: 20px;
+  }
+
+  :root {
+    --spacing: 0.2rem;
+  }
+}
+
 app-root {
   display: block;
   min-height: 100vh;

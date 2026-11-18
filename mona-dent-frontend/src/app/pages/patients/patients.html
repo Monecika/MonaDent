@@ -189,48 +189,61 @@
       <p class="py-6 text-center text-sm text-error">{{ loadError() }}</p>
     } @else {
       @for (patient of filteredPatients(); track patient.patientId) {
-        <article class="rounded-xl border border-border bg-white p-3">
-          <div class="flex min-w-0 items-center gap-3">
-            <input type="checkbox" [checked]="isPatientSelected(patient.patientId)"
-              [attr.aria-label]="'Select patient' | translate"
-              (click)="$event.stopPropagation()" (change)="togglePatientSelection(patient.patientId, $event)" />
-            <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-bg text-accent">
-              {{ getInitials(patient) }}
-            </span>
-            <div class="min-w-0 flex-1">
-              <a [routerLink]="['/patients', patient.patientId]" class="block truncate text-sm font-semibold">{{ patient.name }} {{ patient.surname }}</a>
-              <p class="text-xs text-secondary">#{{ patient.patientNumber }}</p>
-              <p class="mt-1 truncate text-xs text-secondary">{{ patient.phone || ('No phone' | translate) }}</p>
+        <article class="relative rounded-xl border border-border bg-white p-3">
+          <a
+            [routerLink]="['/patients', patient.patientId]"
+            [attr.aria-label]="patient.name + ' ' + patient.surname"
+            class="absolute inset-0 z-0 cursor-pointer rounded-xl hover:bg-accent-bg/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+          ></a>
+          <div class="relative z-10 pointer-events-none">
+            <div class="flex min-w-0 items-center gap-3">
+              <input type="checkbox" [checked]="isPatientSelected(patient.patientId)"
+                class="pointer-events-auto"
+                [attr.aria-label]="'Select patient' | translate"
+                (click)="$event.stopPropagation()"
+                (change)="togglePatientSelection(patient.patientId, $event)" />
+              <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-bg text-accent">
+                {{ getInitials(patient) }}
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold">{{ patient.name }} {{ patient.surname }}</p>
+                <p class="text-xs text-secondary">#{{ patient.patientNumber }}</p>
+                <p class="mt-1 truncate text-xs text-secondary">{{ patient.phone || ('No phone' | translate) }}</p>
+              </div>
+              <app-button
+                class="pointer-events-auto"
+                variant="basic"
+                (click)="openEditPatient(patient)"
+              >
+                <svg lucidePencil class="size-4"></svg>
+                {{ 'Edit' | translate }}
+              </app-button>
             </div>
-            <app-button variant="basic" (click)="openEditPatient(patient)">
-              <svg lucidePencil class="size-4"></svg>
-              {{ 'Edit' | translate }}
-            </app-button>
-          </div>
-          <div class="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3 text-xs">
-            <div>
-              <p class="text-secondary">{{ 'Last Visit' | translate }}</p>
-              @if (summaryForPatient(patient.patientId); as summary) {
-                @if (summary.isLoading) {
-                  <p class="mt-1">{{ 'Loading...' | translate }}</p>
-                } @else if (summary.lastVisitError) {
-                  <p class="mt-1 text-error">{{ summary.lastVisitError }}</p>
-                } @else {
-                  <p class="mt-1">{{ summary.lastVisit?.visitDate ? (summary.lastVisit?.visitDate | localizedDate: 'd MMM yyyy') : '—' }}</p>
+            <div class="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3 text-xs">
+              <div>
+                <p class="text-secondary">{{ 'Last Visit' | translate }}</p>
+                @if (summaryForPatient(patient.patientId); as summary) {
+                  @if (summary.isLoading) {
+                    <p class="mt-1">{{ 'Loading...' | translate }}</p>
+                  } @else if (summary.lastVisitError) {
+                    <p class="mt-1 text-error">{{ summary.lastVisitError }}</p>
+                  } @else {
+                    <p class="mt-1">{{ summary.lastVisit?.visitDate ? (summary.lastVisit?.visitDate | localizedDate: 'd MMM yyyy') : '—' }}</p>
+                  }
                 }
-              }
-            </div>
-            <div>
-              <p class="text-secondary">{{ 'Next Appointment' | translate }}</p>
-              @if (summaryForPatient(patient.patientId); as summary) {
-                @if (summary.isLoading) {
-                  <p class="mt-1">{{ 'Loading...' | translate }}</p>
-                } @else if (summary.nextAppointmentError) {
-                  <p class="mt-1 text-error">{{ summary.nextAppointmentError }}</p>
-                } @else {
-                  <p class="mt-1">{{ summary.nextAppointment?.appointmentDate ? (summary.nextAppointment?.appointmentDate | localizedDate: 'd MMM yyyy') : '—' }}</p>
+              </div>
+              <div>
+                <p class="text-secondary">{{ 'Next Appointment' | translate }}</p>
+                @if (summaryForPatient(patient.patientId); as summary) {
+                  @if (summary.isLoading) {
+                    <p class="mt-1">{{ 'Loading...' | translate }}</p>
+                  } @else if (summary.nextAppointmentError) {
+                    <p class="mt-1 text-error">{{ summary.nextAppointmentError }}</p>
+                  } @else {
+                    <p class="mt-1">{{ summary.nextAppointment?.appointmentDate ? (summary.nextAppointment?.appointmentDate | localizedDate: 'd MMM yyyy') : '—' }}</p>
+                  }
                 }
-              }
+              </div>
             </div>
           </div>
         </article>

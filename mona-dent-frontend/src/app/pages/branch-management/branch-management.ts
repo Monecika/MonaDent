@@ -10,6 +10,7 @@ import { ConfirmationDialog } from '../../components/confirmation-dialog/confirm
 import { LucideBuildingComplex, LucidePencil, LucidePlus, LucideTrash } from '@lucide/angular';
 import { TranslatePipe } from '../../core/pipes/translate-pipe';
 import { HttpErrorService } from '../../core/services/http-error-service';
+import { BranchStore } from '../../core/stores/branch-store';
 
 @Component({
   selector: 'app-branch-management',
@@ -30,6 +31,7 @@ import { HttpErrorService } from '../../core/services/http-error-service';
 export class BranchManagement implements OnInit {
   private readonly branchService = inject(BranchService);
   private readonly httpErrorService = inject(HttpErrorService);
+  private readonly branchStore = inject(BranchStore);
 
   readonly branches = signal<Branch[]>([]);
   readonly isLoading = signal(true);
@@ -78,6 +80,7 @@ export class BranchManagement implements OnInit {
   onBranchSaved(): void {
     this.closeForm();
     this.loadBranches();
+    this.branchStore.refreshBranches();
   }
 
   deleteBranch(branch: Branch): void {
@@ -96,10 +99,12 @@ export class BranchManagement implements OnInit {
       .deleteBranch(branch.branchId)
       .pipe(finalize(() => this.deletingBranchId.set(null)))
       .subscribe({
-        next: () =>
+        next: () => {
           this.branches.update((branches) =>
             branches.filter((item) => item.branchId !== branch.branchId),
-          ),
+          );
+          this.branchStore.refreshBranches();
+        },
         error: (error) => {
           console.error(error);
           this.errorMessage.set(
