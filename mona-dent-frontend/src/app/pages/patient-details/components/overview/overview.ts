@@ -375,6 +375,10 @@ export class Overview {
   toothCaptionLabel(tooth: Tooth): string {
     const findings = this.findingsFor(tooth);
     if (findings.includes('MISSING')) return 'Missing';
+    const problem = findings.find((finding) => [
+      'CARIES', 'PULPITIS', 'PERIODONTITIS', 'PERIODONTAL_DISEASE', 'ROOT_PROBLEM',
+    ].includes(finding));
+    if (problem) return this.findingLabel(problem);
     if (findings.includes('IMPLANT')) return 'Implant';
     if (findings.includes('NOT_ASSESSED')) return 'Not assessed';
     if (findings.includes('HEALTHY')) return 'Healthy';
@@ -470,6 +474,7 @@ export class Overview {
   }
 
   toothCrownFill(tooth: Tooth): string {
+    if (this.isProblem(tooth)) return 'var(--color-error)';
     if (this.hasFinding(tooth, 'CROWN')) return '#e0f2fe';
     if (this.isNotAssessed(tooth)) return '#f8f6ee';
     if (this.hasFinding(tooth, 'CARIES')) return 'var(--color-error)';

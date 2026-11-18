@@ -204,19 +204,22 @@ export class PatientMedicalRecordPdfService {
       });
     const chartMarkFor = (item: PatientToothResponse) => {
       const findings = findingsForTooth(item);
-      if (findings.includes('MISSING') || findings.includes('IMPLANT')) {
-        return findings.includes('MISSING') ? 'L' : 'I';
-      }
-      if (findings.includes('NOT_ASSESSED')
-        || (findings.includes('HEALTHY')
-          && findings.some((finding) => ['CARIES', 'PULPITIS', 'PERIODONTITIS', 'PERIODONTAL_DISEASE', 'ROOT_PROBLEM'].includes(finding)))) {
+      if (findings.includes('MISSING')) return 'L';
+      const hasProblem = findings.some((finding) =>
+        ['CARIES', 'PULPITIS', 'PERIODONTITIS', 'PERIODONTAL_DISEASE', 'ROOT_PROBLEM'].includes(finding),
+      );
+      if (!hasProblem && findings.includes('NOT_ASSESSED')) {
         return '';
       }
-      return findings.map((finding) => ({
-        HEALTHY: '✓',
-        CARIES: 'C', PULPITIS: 'P', PERIODONTITIS: 'Pt', PERIODONTAL_DISEASE: 'A', ROOT_PROBLEM: 'R',
-        FILLING: 'Pl', CROWN: 'Cr',
-      } as Record<string, string>)[finding] ?? '').filter(Boolean).join(' ');
+      return findings
+        .filter((finding) => !hasProblem || finding !== 'HEALTHY')
+        .map((finding) => ({
+          HEALTHY: '✓',
+          CARIES: 'C', PULPITIS: 'P', PERIODONTITIS: 'Pt', PERIODONTAL_DISEASE: 'A', ROOT_PROBLEM: 'R',
+          FILLING: 'Pl', CROWN: 'Cr', IMPLANT: 'I',
+        } as Record<string, string>)[finding] ?? '')
+        .filter(Boolean)
+        .join(' ');
     };
     const upperTeeth = sortArch('upper');
     const lowerTeeth = sortArch('lower');
