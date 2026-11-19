@@ -97,8 +97,7 @@
 }
 
 .tooth-implant .tooth-shape {
-  fill: var(--color-accent-bg);
-  stroke: var(--color-secondary);
+  display: none;
 }
 
 .tooth-missing {
@@ -118,20 +117,52 @@
 }
 
 .tooth-implant-mark {
-  position: absolute;
-  top: 35%;
-  width: 11px;
-  height: 18px;
+  position: relative;
+  display: block;
+  flex: none;
+  width: 30px;
+  height: 48px;
+  margin: 0;
   color: #0284c7;
 }
 
 .tooth-implant-mark svg {
+  display: block;
   width: 100%;
   height: 100%;
-  fill: #e0f2fe;
-  stroke: currentColor;
-  stroke-width: 1.5;
+  fill: none;
+  stroke: #526579;
+  stroke-width: 1.4;
   stroke-linejoin: round;
+  filter: drop-shadow(0 1px 1px rgb(15 23 42 / 15%));
+}
+
+.tooth-implant-mark .implant-crown {
+  fill: #f8fafc;
+  stroke: #64748b;
+  stroke-width: 1.6;
+}
+
+.tooth-implant-mark .implant-abutment {
+  fill: #cbd5e1;
+}
+
+.tooth-implant-mark .implant-fixture {
+  fill: #94a3b8;
+  stroke: #475569;
+  stroke-width: 1.5;
+}
+
+.tooth-implant-mark .implant-thread,
+.tooth-implant-mark .implant-detail {
+  fill: none;
+  stroke: #475569;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+
+.tooth-implant-mark-upper svg {
+  transform: rotate(180deg);
 }
 
 .tooth-mobility-mark {
