@@ -12,6 +12,7 @@ MonaDent is designed to help clinic teams manage day-to-day work from a single a
 - Patient profiles, visit histories, and dental charts
 - Patient file uploads and medical record PDF generation
 - JSON patient data import and export
+- Encrypted scheduled database and patient-file backups to the PC and an optional removable drive
 - Branch, user, and IP allowlist administration
 - English, Romanian, and Russian interface translations
 

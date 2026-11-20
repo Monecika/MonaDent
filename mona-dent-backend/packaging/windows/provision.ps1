@@ -10,7 +10,18 @@ $ErrorActionPreference = 'Stop'
 if (Test-Path variable:PSNativeCommandUseErrorActionPreference) {
     $PSNativeCommandUseErrorActionPreference = $false
 }
-$DataRoot = Join-Path $env:ProgramData 'MonaDent'
+$SelectedDriveRoot = [IO.Path]::GetPathRoot([IO.Path]::GetFullPath($InstallDirectory))
+$LegacyDataRoot = Join-Path $env:ProgramData 'MonaDent'
+$ServiceName = 'MonaDentPostgreSQL'
+$DataRoot = Join-Path $SelectedDriveRoot 'MonaDentData'
+if (Test-Path -LiteralPath (Join-Path $LegacyDataRoot 'application.properties')) {
+    $legacyDriveRoot = [IO.Path]::GetPathRoot([IO.Path]::GetFullPath($LegacyDataRoot))
+    if ($legacyDriveRoot.Equals($SelectedDriveRoot, [StringComparison]::OrdinalIgnoreCase)) {
+        # Existing installs on this same volume keep their established paths;
+        # the app and all persistent data still remain on the selected disk.
+        $DataRoot = $LegacyDataRoot
+    }
+}
 $ConfigPath = Join-Path $DataRoot 'application.properties'
 $BootstrapPath = Join-Path $DataRoot 'database-bootstrap.properties'
 $ProgramFilesRoot = if ([Environment]::Is64BitOperatingSystem -and $env:ProgramW6432) {
@@ -18,17 +29,34 @@ $ProgramFilesRoot = if ([Environment]::Is64BitOperatingSystem -and $env:ProgramW
 } else {
     $env:ProgramFiles
 }
-$PostgreSqlRoot = Join-Path $ProgramFilesRoot 'Mona Dent\PostgreSQL'
+$PostgreSqlRoot = Join-Path $DataRoot 'PostgreSQLRuntime'
 $PostgreSqlData = Join-Path $DataRoot 'PostgreSQL\data'
-$ServiceName = 'MonaDentPostgreSQL'
+$existingPostgresService = Get-CimInstance -ClassName Win32_Service -Filter "Name='$ServiceName'" -ErrorAction SilentlyContinue
+if ((Test-Path -LiteralPath $ConfigPath) -and $existingPostgresService) {
+    $serviceExecutable = [regex]::Match($existingPostgresService.PathName, '(?i)^\s*"?(.+?\\pg_ctl\.exe)"?(?:\s|$)').Groups[1].Value
+    $serviceDataMatch = [regex]::Match($existingPostgresService.PathName, '(?i)(?:^|\s)-D\s+(?:"([^"]+)"|(\S+))')
+    if ($serviceExecutable) { $PostgreSqlRoot = Split-Path -Parent (Split-Path -Parent $serviceExecutable) }
+    if ($serviceDataMatch.Success) {
+        $PostgreSqlData = if ($serviceDataMatch.Groups[1].Success) { $serviceDataMatch.Groups[1].Value } else { $serviceDataMatch.Groups[2].Value }
+    }
+}
 $PostgreSqlServiceAccount = 'MonaDentPostgres'
 $PostgreSqlBin = Join-Path $PostgreSqlRoot 'bin'
-$LogDirectory = Join-Path $DataRoot 'logs'
+$LogDirectory = Join-Path $env:ProgramData 'MonaDent\logs'
 $InstallLog = Join-Path $LogDirectory 'installer.log'
 
 function Write-InstallLog([string]$Message) {
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    Add-Content -Path $InstallLog -Value "[$timestamp] $Message" -Encoding ascii
+    $line = "[$timestamp] $Message"
+    try {
+        New-Item -ItemType Directory -Force -Path $LogDirectory | Out-Null
+        Add-Content -LiteralPath $InstallLog -Value $line -Encoding ascii
+    } catch { }
+}
+
+trap {
+    try { Write-InstallLog "ERROR: $($_.Exception.Message)" } catch { }
+    throw $_
 }
 
 function Grant-InstallerAccess([string]$Path) {
@@ -39,6 +67,24 @@ function Grant-InstallerAccess([string]$Path) {
 }
 
 function Remove-OrphanedFreshInstall {
+    if (Test-Path -LiteralPath (Join-Path $PostgreSqlData 'PG_VERSION')) {
+        throw "A PostgreSQL data cluster already exists under '$PostgreSqlData', but the Mona Dent configuration is missing. Setup stopped to preserve the database and backups; restore the saved configuration or recover the database before retrying."
+    }
+    $patientFiles = Join-Path $DataRoot 'files'
+    if (Test-Path -LiteralPath $patientFiles) {
+        $storedPatientFiles = Get-ChildItem -LiteralPath $patientFiles -Force -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($storedPatientFiles) {
+            throw "Patient files already exist under '$patientFiles', but the Mona Dent configuration is missing. Setup stopped to preserve clinic data."
+        }
+    }
+    $existingBackups = Join-Path $DataRoot 'backups'
+    if (Test-Path -LiteralPath $existingBackups) {
+        $storedBackups = Get-ChildItem -LiteralPath $existingBackups -Force -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($storedBackups) {
+            throw "Backups already exist under '$existingBackups', but the Mona Dent configuration is missing. Setup stopped to preserve them."
+        }
+    }
+
     $serviceDetails = Get-CimInstance -ClassName Win32_Service -Filter "Name='$ServiceName'" -ErrorAction SilentlyContinue
     if ($serviceDetails) {
         $orphanDataPath = $null
@@ -48,11 +94,13 @@ function Remove-OrphanedFreshInstall {
         if ($serviceExecutable) {
             $orphanRuntimeRoot = Split-Path -Parent (Split-Path -Parent $serviceExecutable)
             $programRoots = @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:ProgramW6432) | Where-Object { $_ }
-            $isMonaDentRuntime = @($programRoots | Where-Object {
+            $isLegacyMonaDentRuntime = @($programRoots | Where-Object {
                 $prefix = [IO.Path]::GetFullPath((Join-Path $_ 'Mona Dent')).TrimEnd('\') + '\'
                 [IO.Path]::GetFullPath($orphanRuntimeRoot).StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)
             }).Count -gt 0
-            if (-not $isMonaDentRuntime) { $orphanRuntimeRoot = $null }
+            $isSelectedDriveMonaDentRuntime = [IO.Path]::GetFullPath($orphanRuntimeRoot).Equals(
+                [IO.Path]::GetFullPath($PostgreSqlRoot), [StringComparison]::OrdinalIgnoreCase)
+            if (-not $isLegacyMonaDentRuntime -and -not $isSelectedDriveMonaDentRuntime) { $orphanRuntimeRoot = $null }
         }
 
         if ($serviceExecutable -and $serviceDataPathMatch.Success -and (Test-Path -LiteralPath $serviceExecutable)) {
@@ -149,7 +197,7 @@ function Remove-OrphanedFreshInstall {
     Grant-InstallerAccess (Join-Path $DataRoot 'backups')
     Grant-InstallerAccess (Join-Path $DataRoot 'files')
     Grant-InstallerAccess $LogDirectory
-    Write-InstallLog 'Removed orphaned Mona Dent data and prepared clean ProgramData folders.'
+    Write-InstallLog 'Removed orphaned Mona Dent data and prepared clean folders on the selected drive.'
 }
 
 function Repair-ConfigAccess {
@@ -205,7 +253,7 @@ function Resolve-PostgreSqlInstallation([string]$ServicePathName) {
 }
 
 function Install-PostgreSqlRuntimeRepair {
-    $repairRoot = Join-Path $ProgramFilesRoot 'Mona Dent\PostgreSQLRuntime'
+    $repairRoot = Join-Path $DataRoot 'PostgreSQLRuntime'
     $repairData = Join-Path (Join-Path $DataRoot 'PostgreSQL') 'repair-bootstrap-data'
     $repairService = 'MonaDentPostgreSQLRepair'
 
@@ -416,6 +464,9 @@ function Repair-PostgreSqlDataAccess {
 
 function Start-PostgreSqlService {
     try {
+        # Uninstall disables this service while preserving the database. Re-enable
+        # it automatically whenever Mona Dent is installed or upgraded again.
+        Set-Service -Name $ServiceName -StartupType Automatic -ErrorAction Stop
         Start-Service -Name $ServiceName -ErrorAction Stop
     } catch {
         Write-InstallLog "PostgreSQL service start failed: $($_.Exception.Message)"
@@ -480,6 +531,22 @@ function Invoke-Psql([string]$Sql, [string]$Database, [string]$Password) {
     }
 }
 
+$null = New-Item -ItemType Directory -Force -Path $LogDirectory
+Write-InstallLog "Setup started. Selected drive: '$SelectedDriveRoot'. Data root: '$DataRoot'."
+
+$otherDataRoots = @([IO.DriveInfo]::GetDrives() | Where-Object {
+    $_.DriveType -eq [IO.DriveType]::Fixed -and $_.IsReady
+} | ForEach-Object { Join-Path $_.RootDirectory.FullName 'MonaDentData' } | Where-Object {
+    -not [IO.Path]::GetFullPath($_).Equals([IO.Path]::GetFullPath($DataRoot), [StringComparison]::OrdinalIgnoreCase) -and
+    (Test-Path -LiteralPath (Join-Path $_ 'application.properties'))
+})
+$legacyConfigExists = Test-Path -LiteralPath (Join-Path $LegacyDataRoot 'application.properties')
+$legacyIsSelectedDataRoot = [IO.Path]::GetFullPath($DataRoot).Equals([IO.Path]::GetFullPath($LegacyDataRoot), [StringComparison]::OrdinalIgnoreCase)
+if ($otherDataRoots.Count -gt 0 -or ($legacyConfigExists -and -not $legacyIsSelectedDataRoot)) {
+    $existingDataLocation = if ($otherDataRoots.Count -gt 0) { $otherDataRoots[0] } else { $LegacyDataRoot }
+    throw "An existing Mona Dent installation has data at '$existingDataLocation'. Setup will not create a second, empty database on '$SelectedDriveRoot'; install on the original drive or migrate the existing data first."
+}
+
 New-Item -ItemType Directory -Force -Path $DataRoot, $PostgreSqlData, (Join-Path $DataRoot 'files'), (Join-Path $DataRoot 'backups'), (Join-Path $DataRoot 'logs') | Out-Null
 & icacls.exe $DataRoot /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Could not secure the Mona Dent data directory '$DataRoot'." }
@@ -489,6 +556,28 @@ Grant-InstallerAccess $LogDirectory
 Repair-ConfigAccess
 Write-InstallLog 'Mona Dent setup started.'
 Write-InstallLog "PowerShell process architecture: $([IntPtr]::Size * 8)-bit; PostgreSQL install root: '$PostgreSqlRoot'."
+
+$backupRoot = Join-Path $DataRoot 'backups'
+$recoveryKeyPath = Join-Path $backupRoot 'recovery-key.txt'
+$localResticConfig = Join-Path $backupRoot 'local-repository\config'
+if (-not (Test-Path -LiteralPath $recoveryKeyPath)) {
+    if (Test-Path -LiteralPath $localResticConfig) {
+        throw 'An encrypted backup repository exists but its recovery key is missing. Refusing to replace the key.'
+    }
+    $recoveryBytes = [byte[]]::new(32)
+    $recoveryGenerator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try { $recoveryGenerator.GetBytes($recoveryBytes) } finally { $recoveryGenerator.Dispose() }
+    $recoveryKey = [BitConverter]::ToString($recoveryBytes).Replace('-', '').ToLowerInvariant()
+    Set-Content -LiteralPath $recoveryKeyPath -Value $recoveryKey -Encoding ascii -NoNewline
+    & icacls.exe $recoveryKeyPath /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Could not secure the encrypted-backup recovery key.' }
+}
+
+$backupScript = Join-Path $InstallDirectory '_installer\backup.ps1'
+$resticExecutable = Join-Path $InstallDirectory '_installer\restic.exe'
+if (-not (Test-Path -LiteralPath $backupScript) -or -not (Test-Path -LiteralPath $resticExecutable)) {
+    throw 'The encrypted backup program or scheduled backup script is missing from the installation.'
+}
 
 $postgresService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 if (-not (Test-Path $ConfigPath)) {
@@ -654,6 +743,7 @@ if (-not (Test-Path $ConfigPath)) {
         "spring.datasource.password=$appPassword"
         "security.jwt.secret-key=$jwtSecret"
         "app.files.directory=$((Join-Path $DataRoot 'files').Replace('\', '/'))"
+        'app.backup.removable-directory='
         'server.address=0.0.0.0'
     ) | Set-Content -Path $ConfigPath -Encoding ascii
     Remove-Item $BootstrapPath -Force -ErrorAction SilentlyContinue
@@ -683,27 +773,47 @@ if (-not (Test-Path $ConfigPath)) {
     }
 
     $properties = Get-Content $ConfigPath
-    $dbPassword = ($properties | Where-Object { $_ -like 'spring.datasource.password=*' } | Select-Object -First 1) -replace '^spring\.datasource\.password=', ''
-    if (-not $dbPassword) { throw 'The saved database password is missing. Existing database files were left untouched.' }
-
-    $backupName = 'clinic_db_{0}.backup' -f (Get-Date -Format 'yyyyMMdd_HHmmss')
-    $backupPath = Join-Path (Join-Path $DataRoot 'backups') $backupName
-    $env:PGPASSWORD = $dbPassword
-    try {
-        $dumpOutput = & (Join-Path $PostgreSqlBin 'pg_dump.exe') -w -h 127.0.0.1 -p 5432 -U mona_dent_app -d clinic_db -Fc -f $backupPath 2>&1
-        $dumpExitCode = $LASTEXITCODE
-        if ($dumpExitCode -ne 0) {
-            foreach ($line in $dumpOutput) { Write-InstallLog "pg_dump: $line" }
-            throw "Database backup failed with pg_dump exit code $dumpExitCode. The application update was stopped before migrations ran."
-        }
-        $filesBackup = Join-Path (Join-Path $DataRoot 'backups') ('files_{0}' -f (Get-Date -Format 'yyyyMMdd_HHmmss'))
-        Copy-Item (Join-Path $DataRoot 'files') $filesBackup -Recurse -Force
-    } finally {
-        Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
+    if (-not ($properties | Where-Object { $_ -like 'spring.datasource.password=*' } | Select-Object -First 1)) {
+        throw 'The saved database password is missing. Existing database files were left untouched.'
     }
-    Write-InstallLog "Upgrade backup completed at $backupPath."
+    if (-not ($properties | Where-Object { $_ -like 'app.backup.removable-directory=*' } | Select-Object -First 1)) {
+        Add-Content -Path $ConfigPath -Value 'app.backup.removable-directory=' -Encoding ascii
+    }
+    $upgradeBackupOutput = & (Join-Path $PSHOME 'powershell.exe') -NoProfile -ExecutionPolicy Bypass `
+        -File $backupScript -DataRoot $DataRoot -ResticExecutable $resticExecutable 2>&1
+    $upgradeBackupExitCode = $LASTEXITCODE
+    foreach ($line in $upgradeBackupOutput) { Write-InstallLog "pre-upgrade backup: $line" }
+    if ($upgradeBackupExitCode -ne 0) {
+        throw "Encrypted backup failed with exit code $upgradeBackupExitCode. The application upgrade was stopped before migrations ran."
+    }
+    Write-InstallLog 'Encrypted database and patient-file backup completed before upgrade.'
 
 }
+
+$backupProperty = Get-Content $ConfigPath | Where-Object { $_ -like 'app.backup.removable-directory=*' } | Select-Object -First 1
+if (-not $backupProperty) {
+    Add-Content -Path $ConfigPath -Value 'app.backup.removable-directory=' -Encoding ascii
+}
+$backupStatusPath = Join-Path $backupRoot 'backup-status.txt'
+if (-not (Test-Path -LiteralPath $backupStatusPath)) {
+    Set-Content -LiteralPath $backupStatusPath -Value "Backups have not run yet. Check '$backupRoot\backup.log'." -Encoding UTF8
+}
+$backupInstructionsPath = Join-Path $backupRoot 'BACKUP-SETUP.txt'
+@(
+    'Mona Dent automatic backups',
+    '',
+    'The app saves encrypted snapshots on this PC every day and when Windows starts.',
+    'To add an off-site removable copy, label one external drive MonaDentBackup and connect it when the backup runs. Disconnect it after a successful run and store it separately from this PC.',
+    'The backup job runs daily at 5:00 PM and at startup, keeping the latest 3 snapshots in each repository. To run it after connecting the drive, open Task Scheduler and choose MonaDent Daily Backup > Run.',
+    'To use another path, set app.backup.removable-directory in this folder''s parent application.properties file.',
+    '',
+    'Save the recovery key from recovery-key.txt in a secure place separate from this PC and the removable drive.',
+    'Without the recovery key, encrypted backups cannot be restored. Do not store its only copy on the backup drive.',
+    '',
+    'Latest result: backup-status.txt. Detailed log: backup.log.'
+) | Set-Content -LiteralPath $backupInstructionsPath -Encoding UTF8
+& icacls.exe $backupInstructionsPath /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'Could not secure the backup instructions file.' }
 
 @('[InternetShortcut]', 'URL=http://127.0.0.1:8080') |
     Set-Content -Path (Join-Path $InstallDirectory 'MonaDent.url') -Encoding ascii
@@ -756,6 +866,22 @@ if (-not $applicationReady) {
     throw "Mona Dent service started, but the web app did not respond at http://127.0.0.1:8080/. Check '$LogDirectory' for service logs."
 }
 Write-InstallLog 'Mona Dent web app is responding at http://127.0.0.1:8080/.'
+
+$powerShellExecutable = Join-Path $PSHOME 'powershell.exe'
+$backupArguments = "-NoProfile -ExecutionPolicy Bypass -File `"$backupScript`" -DataRoot `"$DataRoot`" -ResticExecutable `"$resticExecutable`""
+$backupAction = New-ScheduledTaskAction -Execute $powerShellExecutable -Argument $backupArguments
+$backupTriggers = @(
+    (New-ScheduledTaskTrigger -Daily -At '5:00PM'),
+    (New-ScheduledTaskTrigger -AtStartup)
+)
+$backupSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+    -ExecutionTimeLimit (New-TimeSpan -Hours 6) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 10) -MultipleInstances IgnoreNew
+$backupPrincipal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+Register-ScheduledTask -TaskName 'MonaDent Daily Backup' -Action $backupAction -Trigger $backupTriggers `
+    -Settings $backupSettings -Principal $backupPrincipal -Force | Out-Null
+Write-InstallLog 'Registered the encrypted backup job (17:00 and at computer startup; keeps the latest 3 snapshots per repository).'
+Start-ScheduledTask -TaskName 'MonaDent Daily Backup'
+Write-InstallLog 'Started the first scheduled backup run.'
 
 try {
     if (-not (Get-NetFirewallRule -DisplayName 'Mona Dent application' -ErrorAction SilentlyContinue)) {

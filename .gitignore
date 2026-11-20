@@ -15,6 +15,10 @@
 **/coverage/
 .cache/
 
+# Locally downloaded packaging payloads (PostgreSQL installers, Restic, WinSW, etc.)
+**/vendor/**
+!**/vendor/.gitkeep
+
 # Local environment and secrets
 .env
 .env.*

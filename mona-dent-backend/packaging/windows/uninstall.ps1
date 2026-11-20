@@ -39,18 +39,15 @@ $programFilesRoots = @(
     $env:ProgramW6432
 ) | Where-Object { $_ } | ForEach-Object { [IO.Path]::GetFullPath($_).TrimEnd('\') } | Select-Object -Unique
 $programFilesProductRoots = @($programFilesRoots | ForEach-Object { Join-Path $_ 'Mona Dent' } | Select-Object -Unique)
-$programFilesCleanupRoots = @($programFilesProductRoots | Where-Object {
-    -not $InstallDirectory -or (
-        -not $_.Equals($InstallDirectory, [StringComparison]::OrdinalIgnoreCase) -and
-        -not $InstallDirectory.StartsWith($_ + '\', [StringComparison]::OrdinalIgnoreCase) -and
-        -not $_.StartsWith($InstallDirectory + '\', [StringComparison]::OrdinalIgnoreCase)
-    )
-})
+# PostgreSQL is installed under the shared product folder. Keep its runtime
+# so the retained clinic database remains usable after removing the app.
+$programFilesCleanupRoots = @()
 $productRoots = @($InstallDirectory) + $programFilesProductRoots
 $productRoots = @($productRoots | Where-Object { $_ } | Select-Object -Unique)
 
 function Test-PathInProductRoot([string]$Path) {
     if (-not $Path) { return $false }
+    if ($Path -match '(?i)\\Mona Dent\\PostgreSQL(?:\\|$)') { return $false }
     foreach ($root in $productRoots) {
         if ($root -and $root.Length -gt 3) {
             $fullRoot = [IO.Path]::GetFullPath($root).TrimEnd('\')
@@ -97,10 +94,8 @@ if ($FinalizeAfterUninstaller) {
 
     $finalizeSucceeded = $false
     try {
-        Remove-DirectoryCompletely $InstallDirectory
-        foreach ($root in $programFilesProductRoots) {
-            Remove-DirectoryCompletely $root
-        }
+        # Inno removes its registered application files after UninstallRun.
+        # Keep the shared product directory because it contains PostgreSQL.
         $finalizeSucceeded = $true
     } finally {
         Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue
@@ -111,11 +106,30 @@ if ($FinalizeAfterUninstaller) {
     exit 0
 }
 
-$dataRoot = Join-Path $env:ProgramData 'MonaDent'
+$installDriveRoot = if ($InstallDirectory) { [IO.Path]::GetPathRoot([IO.Path]::GetFullPath($InstallDirectory)) } else { $null }
+$dataRoot = if ($installDriveRoot) { Join-Path $installDriveRoot 'MonaDentData' } else { Join-Path $env:ProgramData 'MonaDent' }
+$serviceConfigurationPath = if ($InstallDirectory) { Join-Path $InstallDirectory 'MonaDentService.xml' } else { $null }
+if ($serviceConfigurationPath -and (Test-Path -LiteralPath $serviceConfigurationPath)) {
+    try {
+        [xml]$serviceConfiguration = Get-Content -LiteralPath $serviceConfigurationPath -Raw
+        $filesSetting = @($serviceConfiguration.service.env | Where-Object { $_.name -eq 'MONA_DENT_FILES_DIRECTORY' } | Select-Object -First 1)
+        if ($filesSetting.Count -gt 0 -and $filesSetting[0].value) {
+            $configuredDataRoot = Split-Path -Parent ([string]$filesSetting[0].value)
+            if ([IO.Path]::GetFileName($configuredDataRoot) -in @('MonaDent', 'MonaDentData')) { $dataRoot = $configuredDataRoot }
+        }
+    } catch { }
+}
 $logPath = Join-Path $env:TEMP 'MonaDent-uninstall.log'
 
 function Write-UninstallLog([string]$Message) {
     Add-Content -LiteralPath $logPath -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $Message" -Encoding UTF8
+}
+
+$backupTask = Get-ScheduledTask -TaskName 'MonaDent Daily Backup' -ErrorAction SilentlyContinue
+if ($backupTask) {
+    Stop-ScheduledTask -TaskName 'MonaDent Daily Backup' -ErrorAction SilentlyContinue
+    Unregister-ScheduledTask -TaskName 'MonaDent Daily Backup' -Confirm:$false -ErrorAction Stop
+    Write-UninstallLog 'Removed the scheduled backup task; clinic data and backup repositories are retained.'
 }
 
 trap {
@@ -123,40 +137,13 @@ trap {
     throw $_
 }
 
-Write-UninstallLog 'Complete Mona Dent removal started.'
+Write-UninstallLog 'Mona Dent application removal started; PostgreSQL and clinic data are being preserved.'
 $serviceDetails = @(Get-CimInstance -ClassName Win32_Service -ErrorAction SilentlyContinue)
 $monaDentServices = @($serviceDetails | Where-Object {
     $servicePath = $_.PathName
-    $_.Name -match '(?i)^MonaDent' -or (Test-PathInProductRoot $servicePath)
+    $_.Name -notmatch '(?i)^MonaDentPostgreSQL$' -and
+        ($_.Name -match '(?i)^MonaDent' -or (Test-PathInProductRoot $servicePath))
 })
-
-function Get-PostgreSqlServicePaths($Service) {
-    if (-not $Service.PathName) { return $null }
-    $exeMatch = [regex]::Match($Service.PathName, '(?i)^\s*"?(.+?\\pg_ctl\.exe)"?(?:\s|$)')
-    $dataMatch = [regex]::Match($Service.PathName, '(?i)(?:^|\s)-D\s+(?:"([^"]+)"|(\S+))')
-    if (-not $exeMatch.Success -or -not $dataMatch.Success) { return $null }
-    $dataPath = if ($dataMatch.Groups[1].Success) { $dataMatch.Groups[1].Value } else { $dataMatch.Groups[2].Value }
-    [pscustomobject]@{
-        Executable = [IO.Path]::GetFullPath($exeMatch.Groups[1].Value)
-        DataDirectory = [IO.Path]::GetFullPath($dataPath)
-    }
-}
-
-$postgresDataDirectories = @($monaDentServices | ForEach-Object {
-    $postgresPaths = Get-PostgreSqlServicePaths $_
-    if ($postgresPaths) { $postgresPaths.DataDirectory }
-}) + @((Join-Path $env:ProgramData 'MonaDent\PostgreSQL\data'))
-$postgresDataDirectories = @($postgresDataDirectories | Where-Object { $_ } | Select-Object -Unique)
-
-function Test-IsMonaDentPostgreSqlProcess($Process) {
-    if ($Process.Name -notmatch '(?i)^postgres(?:\.exe)?$') { return $false }
-    if (Test-PathInProductRoot $Process.ExecutablePath) { return $true }
-    if (-not $Process.CommandLine) { return $false }
-    foreach ($dataDirectory in $postgresDataDirectories) {
-        if ($Process.CommandLine.IndexOf($dataDirectory, [StringComparison]::OrdinalIgnoreCase) -ge 0) { return $true }
-    }
-    return $false
-}
 
 function Get-ProcessTreeIds([int[]]$RootProcessIds, $ProcessSnapshot) {
     $allIds = @($RootProcessIds | Where-Object { $_ -gt 0 } | Select-Object -Unique)
@@ -187,17 +174,6 @@ function Stop-ProcessTrees([int[]]$RootProcessIds, [string]$Reason) {
 }
 
 foreach ($service in $monaDentServices) {
-    $postgresPaths = Get-PostgreSqlServicePaths $service
-    if ($postgresPaths -and (Test-Path -LiteralPath $postgresPaths.Executable)) {
-        Write-UninstallLog "Requesting a clean PostgreSQL shutdown: '$($postgresPaths.Executable)' stop -D '$($postgresPaths.DataDirectory)' -m fast -w."
-        $pgCtlOutput = & $postgresPaths.Executable stop -D $postgresPaths.DataDirectory -m fast -w -t 60 2>&1
-        $pgCtlExitCode = $LASTEXITCODE
-        foreach ($line in $pgCtlOutput) { Write-UninstallLog "pg_ctl stop: $line" }
-        if ($pgCtlExitCode -ne 0) {
-            Write-UninstallLog "pg_ctl stop returned $pgCtlExitCode; requesting shutdown through the Windows service manager."
-        }
-    }
-
     try {
         $current = Get-Service -Name $service.Name -ErrorAction SilentlyContinue
         if ($current -and $current.Status -ne 'Stopped') {
@@ -232,9 +208,7 @@ foreach ($service in $monaDentServices) {
     Write-UninstallLog "Verified service '$($service.Name)' is stopped."
 }
 
-# Stop Mona Dent and PostgreSQL processes by executable path. Exclude this
-# cleanup process and its Inno Setup parent; the finalizer removes {app} after
-# the uninstaller exits.
+# Stop Mona Dent application processes. Exclude this script and its Inno Setup parent.
 $processes = @(Get-CimInstance -ClassName Win32_Process -ErrorAction SilentlyContinue)
 $currentProcess = $processes | Where-Object { $_.ProcessId -eq $PID } | Select-Object -First 1
 $excludedProcessIds = @($PID, [int]$currentProcess.ParentProcessId)
@@ -244,7 +218,6 @@ $matchingProcesses = @($processes | Where-Object {
     $_.ProcessId -notin $excludedProcessIds -and
     ($_.Name -match '(?i)^MonaDent' -or
         (Test-PathInProductRoot $_.ExecutablePath) -or
-        (Test-IsMonaDentPostgreSqlProcess $_) -or
         $_.ProcessId -in $serviceTreeIds)
 })
 if ($matchingProcesses.Count -gt 0) {
@@ -256,7 +229,6 @@ for ($attempt = 0; $attempt -lt 30; $attempt++) {
         $_.ProcessId -notin $excludedProcessIds -and
         ($_.Name -match '(?i)^MonaDent' -or
             (Test-PathInProductRoot $_.ExecutablePath) -or
-            (Test-IsMonaDentPostgreSqlProcess $_) -or
             $_.ProcessId -in $serviceTreeIds)
     })
     if ($remainingProcesses.Count -eq 0) { break }
@@ -267,6 +239,28 @@ for ($attempt = 0; $attempt -lt 30; $attempt++) {
 if ($remainingProcesses.Count -gt 0) {
     $remainingDescription = ($remainingProcesses | ForEach-Object { "$($_.Name) (PID $($_.ProcessId))" }) -join ', '
     throw "Mona Dent processes are still running: $remainingDescription. Their files were kept."
+}
+
+# Stop and disable PostgreSQL so it does not run in the background after app
+# removal. Its data directory and backup files remain available for reinstall.
+$postgresServiceName = 'MonaDentPostgreSQL'
+$postgresService = Get-Service -Name $postgresServiceName -ErrorAction SilentlyContinue
+if ($postgresService) {
+    if ($postgresService.Status -ne 'Stopped') {
+        $postgresStopOutput = & sc.exe stop $postgresServiceName 2>&1
+        foreach ($line in $postgresStopOutput) { Write-UninstallLog "PostgreSQL sc stop: $line" }
+        for ($attempt = 0; $attempt -lt 90; $attempt++) {
+            $postgresService = Get-Service -Name $postgresServiceName -ErrorAction SilentlyContinue
+            if (-not $postgresService -or $postgresService.Status -eq 'Stopped') { break }
+            Start-Sleep -Seconds 1
+        }
+    }
+    $postgresService = Get-Service -Name $postgresServiceName -ErrorAction SilentlyContinue
+    if ($postgresService -and $postgresService.Status -ne 'Stopped') {
+        throw "PostgreSQL service '$postgresServiceName' did not stop; the database files were kept."
+    }
+    Set-Service -Name $postgresServiceName -StartupType Disabled -ErrorAction Stop
+    Write-UninstallLog 'PostgreSQL is stopped and disabled; its database files are retained for reinstall.'
 }
 
 foreach ($service in $monaDentServices) {
@@ -281,12 +275,11 @@ foreach ($service in $monaDentServices) {
 $finalProcessCheck = @(Get-CimInstance -ClassName Win32_Process -ErrorAction SilentlyContinue | Where-Object {
     $_.Name -match '(?i)^MonaDent' -or
     (Test-PathInProductRoot $_.ExecutablePath) -or
-    (Test-IsMonaDentPostgreSqlProcess $_) -or
     $_.ProcessId -in $serviceTreeIds
 })
 if ($finalProcessCheck.Count -gt 0) {
     $stillRunning = ($finalProcessCheck | ForEach-Object { "$($_.Name) (PID $($_.ProcessId))" }) -join ', '
-    throw "Mona Dent or PostgreSQL processes are still running: $stillRunning. Their files have not been deleted."
+    throw "Mona Dent application processes are still running: $stillRunning. Their files have not been deleted."
 }
 foreach ($service in $monaDentServices) {
     for ($attempt = 0; $attempt -lt 30; $attempt++) {
@@ -326,10 +319,9 @@ foreach ($profile in $profiles) {
 Remove-Item -LiteralPath (Join-Path $env:PUBLIC 'Desktop\Mona Dent.lnk') -Force -ErrorAction SilentlyContinue
 Remove-DirectoryCompletely (Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\Mona Dent')
 
-Remove-DirectoryCompletely $dataRoot
-foreach ($root in $programFilesCleanupRoots) {
-    Remove-DirectoryCompletely $root
-}
+# Keep PostgreSQL runtime and all patient files, keys, and repositories for a
+# later reinstall, while leaving its service stopped and disabled.
+Write-UninstallLog "Retaining database, patient files, recovery key, and backups under '$dataRoot'; PostgreSQL is stopped and disabled."
 
 foreach ($temporaryPath in @(
     (Join-Path $env:TEMP 'MonaDent-postgresql-install-debug.log'),
@@ -347,4 +339,4 @@ $finalizerScript = Join-Path $env:TEMP "MonaDent-FinalizeUninstall-$PID.ps1"
 Copy-Item -LiteralPath $PSCommandPath -Destination $finalizerScript -Force
 $finalizerArguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}" -FinalizeAfterUninstaller -UninstallerProcessId {1} -UninstallerPath "{2}" -InstallDirectory "{3}"' -f $finalizerScript, $uninstallerProcessId, $UninstallerPath, $InstallDirectory
 Start-Process -FilePath 'powershell.exe' -ArgumentList $finalizerArguments -WindowStyle Hidden | Out-Null
-Write-UninstallLog 'Mona Dent data, services, processes, and shared folders were removed; the finalizer will remove the active install folder after uninstall exits.'
+Write-UninstallLog 'Mona Dent app files were uninstalled; PostgreSQL is stopped and disabled, and clinic data is retained.'

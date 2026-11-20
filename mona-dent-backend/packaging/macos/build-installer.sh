@@ -13,11 +13,18 @@ JAR_NAME="mona-dent-0.0.1-SNAPSHOT.jar"
 MAC_ARCH="$(uname -m)"
 VENDOR_DIR="$BACKEND_DIR/packaging/macos/vendor"
 case "$MAC_ARCH" in
-  arm64) DEFAULT_POSTGRES_DMG="$VENDOR_DIR/postgresql-18-macos-arm64.dmg" ;;
-  x86_64) DEFAULT_POSTGRES_DMG="$VENDOR_DIR/postgresql-18-macos-x64.dmg" ;;
+  arm64)
+    DEFAULT_POSTGRES_DMG="$VENDOR_DIR/postgresql-18-macos-arm64.dmg"
+    RESTIC_ARCH="arm64"
+    ;;
+  x86_64)
+    DEFAULT_POSTGRES_DMG="$VENDOR_DIR/postgresql-18-macos-x64.dmg"
+    RESTIC_ARCH="amd64"
+    ;;
   *) echo "Unsupported Mac architecture: $MAC_ARCH" >&2; exit 1 ;;
 esac
 POSTGRES_DMG="${MONA_DENT_POSTGRES_DMG:-$DEFAULT_POSTGRES_DMG}"
+RESTIC_BINARY="${MONA_DENT_RESTIC_BINARY:-$VENDOR_DIR/restic-darwin-$RESTIC_ARCH}"
 
 for command in npm jpackage pkgbuild; do
   if ! command -v "$command" >/dev/null 2>&1; then
@@ -27,6 +34,10 @@ for command in npm jpackage pkgbuild; do
 done
 if [[ -z "$POSTGRES_DMG" || ! -f "$POSTGRES_DMG" ]]; then
   echo "PostgreSQL installer is missing: $POSTGRES_DMG (see packaging/README.md for the expected filename)." >&2
+  exit 1
+fi
+if [[ ! -f "$RESTIC_BINARY" || ! -x "$RESTIC_BINARY" ]]; then
+  echo "Executable restic binary is missing: $RESTIC_BINARY (see packaging/README.md for the expected vendor file)." >&2
   exit 1
 fi
 
@@ -53,6 +64,9 @@ test -f "$BACKEND_DIR/target/$JAR_NAME" || {
 
 mkdir -p "$JPACKAGE_INPUT" "$RELEASE_DIR"
 cp "$BACKEND_DIR/target/$JAR_NAME" "$JPACKAGE_INPUT/"
+cp "$RESTIC_BINARY" "$JPACKAGE_INPUT/restic"
+cp "$BACKEND_DIR/packaging/licenses/restic-LICENSE.txt" "$JPACKAGE_INPUT/restic-LICENSE.txt"
+chmod 755 "$JPACKAGE_INPUT/restic"
 jpackage \
   --type app-image \
   --name MonaDent \
@@ -67,6 +81,10 @@ mkdir -p "$PKG_ROOT/Applications"
 cp -R "$RELEASE_DIR/MonaDent.app" "$PKG_ROOT/Applications/MonaDent.app"
 mkdir -p "$PKG_ROOT/Applications/MonaDent.app/Contents/Resources"
 cp "$POSTGRES_DMG" "$PKG_ROOT/Applications/MonaDent.app/Contents/Resources/postgresql-installer.dmg"
+cp "$BACKEND_DIR/packaging/macos/scripts/backup.sh" "$PKG_ROOT/Applications/MonaDent.app/Contents/Resources/backup.sh"
+mkdir -p "$PKG_ROOT/Applications/MonaDent.app/Contents/Resources/third-party-licenses"
+cp "$BACKEND_DIR/packaging/licenses/restic-LICENSE.txt" "$PKG_ROOT/Applications/MonaDent.app/Contents/Resources/third-party-licenses/restic-LICENSE.txt"
+chmod 755 "$PKG_ROOT/Applications/MonaDent.app/Contents/Resources/backup.sh"
 pkgbuild \
   --root "$PKG_ROOT" \
   --scripts "$BACKEND_DIR/packaging/macos/scripts" \

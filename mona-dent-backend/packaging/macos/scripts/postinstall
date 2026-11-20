@@ -10,6 +10,7 @@ DATA_ROOT="/Library/Application Support/MonaDent"
 CONFIG="$DATA_ROOT/application.properties"
 BOOTSTRAP="$DATA_ROOT/database-bootstrap.sh"
 SERVICE_PLIST="/Library/LaunchDaemons/com.monadent.app.plist"
+BACKUP_PLIST="/Library/LaunchDaemons/com.monadent.backup.plist"
 
 /bin/mkdir -p "$DATA_ROOT/logs"
 
@@ -105,6 +106,7 @@ spring.datasource.username=mona_dent_app
 spring.datasource.password=$APP_PASSWORD
 security.jwt.secret-key=$JWT_SECRET
 app.files.directory=$DATA_ROOT/files
+app.backup.removable-directory=
 server.address=0.0.0.0
 EOF
   POSTGRES_GROUP="$(/usr/bin/id -gn postgres)"
@@ -115,6 +117,45 @@ EOF
   trap - EXIT
   /bin/rm -f /tmp/install-postgresql.log
 fi
+
+if ! /usr/bin/grep -q '^app.backup.removable-directory=' "$CONFIG"; then
+  /usr/bin/printf '\napp.backup.removable-directory=\n' >> "$CONFIG"
+fi
+
+/bin/mkdir -p "$DATA_ROOT/backups"
+if [[ ! -f "$DATA_ROOT/backups/recovery-key.txt" ]]; then
+  if [[ -f "$DATA_ROOT/backups/local-repository/config" ]]; then
+    echo 'An encrypted backup repository exists but its recovery key is missing; refusing to replace the key.' >&2
+    exit 1
+  fi
+  /usr/bin/openssl rand -hex 32 > "$DATA_ROOT/backups/recovery-key.txt"
+  /usr/sbin/chown postgres:"$(/usr/bin/id -gn postgres)" "$DATA_ROOT/backups/recovery-key.txt"
+  /bin/chmod 600 "$DATA_ROOT/backups/recovery-key.txt"
+fi
+
+BACKUP_SCRIPT="$DATA_ROOT/backup.sh"
+/bin/cp "$APP_BUNDLE/Contents/Resources/backup.sh" "$BACKUP_SCRIPT"
+/usr/sbin/chown root:wheel "$BACKUP_SCRIPT"
+/bin/chmod 700 "$BACKUP_SCRIPT"
+
+cat > "$DATA_ROOT/backups/BACKUP-SETUP.txt" <<EOF
+Mona Dent automatic backups
+
+The app saves encrypted snapshots on this Mac every day and at startup.
+To add an off-site removable copy, name an external volume MonaDentBackup and connect it when the backup runs. Disconnect it after a successful run and store it separately from this Mac.
+The job runs daily at 5:00 PM and at startup, keeping the latest 3 snapshots in each repository. To run it after connecting the drive, use:
+sudo launchctl kickstart -k system/com.monadent.backup
+
+To use another path, set app.backup.removable-directory in $CONFIG.
+
+Save the recovery key from $DATA_ROOT/backups/recovery-key.txt in a secure place separate from this Mac and the removable drive.
+Without the recovery key, encrypted backups cannot be restored. Do not store its only copy on the backup drive.
+
+Latest result: $DATA_ROOT/backups/backup-status.txt
+Detailed log: $DATA_ROOT/backups/backup.log
+EOF
+/usr/sbin/chown root:wheel "$DATA_ROOT/backups/BACKUP-SETUP.txt"
+/bin/chmod 600 "$DATA_ROOT/backups/BACKUP-SETUP.txt"
 
 if ! "$PG_BIN/pg_isready" -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
   echo 'The saved Mona Dent database exists, but PostgreSQL is not running.' >&2
@@ -140,10 +181,31 @@ cat > "$SERVICE_PLIST" <<EOF
 </dict></plist>
 EOF
 
+cat > "$BACKUP_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.monadent.backup</string>
+  <key>UserName</key><string>root</string>
+  <key>ProgramArguments</key><array>
+    <string>/bin/bash</string>
+    <string>$BACKUP_SCRIPT</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>17</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardOutPath</key><string>$DATA_ROOT/logs/backup-job.log</string>
+  <key>StandardErrorPath</key><string>$DATA_ROOT/logs/backup-job-error.log</string>
+</dict></plist>
+EOF
+
 /usr/sbin/chown root:wheel "$SERVICE_PLIST"
 /bin/chmod 644 "$SERVICE_PLIST"
+/usr/sbin/chown root:wheel "$BACKUP_PLIST"
+/bin/chmod 644 "$BACKUP_PLIST"
 /usr/bin/xattr -d com.apple.quarantine "$APP_BUNDLE" 2>/dev/null || true
 /bin/rm -f "$PG_INSTALLER_DMG"
 /bin/launchctl bootstrap system "$SERVICE_PLIST" 2>/dev/null || /bin/launchctl kickstart -k system/com.monadent.app
+/bin/launchctl bootout system "$BACKUP_PLIST" >/dev/null 2>&1 || true
+/bin/launchctl bootstrap system "$BACKUP_PLIST"
 
 exit 0

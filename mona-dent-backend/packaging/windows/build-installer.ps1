@@ -11,6 +11,7 @@ $Version = if ($env:MONA_DENT_VERSION) { $env:MONA_DENT_VERSION } else { '0.0.1'
 $JarName = 'mona-dent-0.0.1-SNAPSHOT.jar'
 $PostgreSqlInstaller = if ($env:MONA_DENT_POSTGRES_INSTALLER) { $env:MONA_DENT_POSTGRES_INSTALLER } else { Join-Path $VendorDirectory 'postgresql-18-windows-x64.exe' }
 $WinSWExecutable = if ($env:MONA_DENT_WINSW_EXE) { $env:MONA_DENT_WINSW_EXE } else { Join-Path $VendorDirectory 'winsw-x64.exe' }
+$ResticExecutable = if ($env:MONA_DENT_RESTIC_EXE) { $env:MONA_DENT_RESTIC_EXE } else { Join-Path $VendorDirectory 'restic.exe' }
 $ApplicationIcon = Join-Path $PSScriptRoot 'assets/mona-dent.ico'
 $InnoCompiler = if ($env:ISCC_EXE) { $env:ISCC_EXE } else { Join-Path $env:ProgramFiles 'Inno Setup 7\ISCC.exe' }
 
@@ -19,7 +20,7 @@ foreach ($command in @('npm', 'jar', 'jpackage', $InnoCompiler)) {
         throw "Required build command '$command' was not found. Install it on the release build machine and retry."
     }
 }
-foreach ($path in @($PostgreSqlInstaller, $WinSWExecutable)) {
+foreach ($path in @($PostgreSqlInstaller, $WinSWExecutable, $ResticExecutable)) {
     if (-not $path -or -not (Test-Path $path)) {
         throw "Required build payload is missing: $path. See packaging/README.md for the expected vendor filenames."
     }
@@ -78,6 +79,8 @@ foreach ($flywayLibrary in @('spring-boot-flyway', 'flyway-core', 'flyway-databa
 
 New-Item -ItemType Directory -Force -Path $ReleaseDirectory | Out-Null
 New-Item -ItemType Directory -Force -Path $JpackageInputDirectory | Out-Null
+Copy-Item $ResticExecutable (Join-Path $JpackageInputDirectory 'restic.exe') -Force
+Copy-Item (Join-Path $PSScriptRoot '../licenses/restic-LICENSE.txt') (Join-Path $JpackageInputDirectory 'restic-LICENSE.txt') -Force
 Copy-Item (Join-Path $BackendDirectory "target/$JarName") $JpackageInputDirectory -Force
 jpackage `
     --type app-image `
