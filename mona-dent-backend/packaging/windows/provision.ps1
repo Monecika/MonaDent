@@ -462,6 +462,50 @@ function Repair-PostgreSqlDataAccess {
     }
 }
 
+function Stop-OrphanedPostgreSqlProcess {
+    $pidFile = Join-Path $PostgreSqlData 'postmaster.pid'
+    if (-not (Test-Path -LiteralPath $pidFile)) { return }
+
+    $pidLines = Get-Content -LiteralPath $pidFile -ErrorAction Stop
+    $serverPid = 0
+    if ($pidLines.Count -eq 0 -or -not [int]::TryParse([string]$pidLines[0], [ref]$serverPid) -or $serverPid -le 0) {
+        throw "PostgreSQL's PID file '$pidFile' is invalid. Setup stopped without changing it or the database."
+    }
+
+    $dataPath = [IO.Path]::GetFullPath($PostgreSqlData).TrimEnd('\')
+    $serverProcess = Get-CimInstance -ClassName Win32_Process -Filter "ProcessId=$serverPid" -ErrorAction SilentlyContinue
+    $belongsToDataDirectory = $serverProcess -and
+        $serverProcess.Name -match '(?i)^postgres(?:\.exe)?$' -and
+        $serverProcess.CommandLine -and
+        $serverProcess.CommandLine.IndexOf($dataPath, [StringComparison]::OrdinalIgnoreCase) -ge 0
+
+    if ($belongsToDataDirectory) {
+        Write-InstallLog "Found PostgreSQL PID $serverPid still using '$dataPath' while its Windows service is stopped; requesting a clean shutdown."
+        $stopOutput = & (Join-Path $PostgreSqlBin 'pg_ctl.exe') stop -D $PostgreSqlData -m fast -w -t 60 2>&1
+        foreach ($line in $stopOutput) { Write-InstallLog "pg_ctl orphan stop: $line" }
+        if ($LASTEXITCODE -ne 0) {
+            throw "PostgreSQL process $serverPid could not be stopped cleanly. Setup stopped and left the database untouched."
+        }
+
+        for ($attempt = 0; $attempt -lt 60; $attempt++) {
+            $serverProcess = Get-CimInstance -ClassName Win32_Process -Filter "ProcessId=$serverPid" -ErrorAction SilentlyContinue
+            if (-not $serverProcess) { break }
+            Start-Sleep -Seconds 1
+        }
+        if ($serverProcess) {
+            throw "PostgreSQL process $serverPid is still running. Setup stopped and left the database untouched."
+        }
+        Write-InstallLog "PostgreSQL process $serverPid stopped cleanly."
+    } else {
+        Write-InstallLog "PostgreSQL PID file references no live server for '$dataPath'; removing the stale PID file."
+    }
+
+    if (Test-Path -LiteralPath $pidFile) {
+        Remove-Item -LiteralPath $pidFile -Force -ErrorAction Stop
+        Write-InstallLog 'Removed the PostgreSQL PID file after confirming its server process is stopped.'
+    }
+}
+
 function Start-PostgreSqlService {
     try {
         # Uninstall disables this service while preserving the database. Re-enable
@@ -708,6 +752,7 @@ if (-not (Test-Path $ConfigPath)) {
         Stop-Service -Name $ServiceName -Force
     }
     Repair-PostgreSqlDataAccess
+    Stop-OrphanedPostgreSqlProcess
     Start-PostgreSqlService
 
     $ready = $false
@@ -757,6 +802,7 @@ if (-not (Test-Path $ConfigPath)) {
         Stop-Service -Name $ServiceName -Force
     }
     Repair-PostgreSqlDataAccess
+    Stop-OrphanedPostgreSqlProcess
     Start-PostgreSqlService
 
     $ready = $false

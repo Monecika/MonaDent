@@ -164,7 +164,7 @@ export class CalendarComponent implements OnInit, AfterViewInit {
     initialView: 'timeGridWeek',
     headerToolbar: false,
     firstDay: 1,
-    hiddenDays: [0],
+    hiddenDays: [],
     allDaySlot: false,
     slotMinTime: '09:00:00',
     slotMaxTime: '18:00:00',

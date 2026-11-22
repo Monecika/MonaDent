@@ -90,9 +90,9 @@ export class AppointmentForm implements OnInit {
   delete = output<string>();
 
   appointmentId: string | null = null;
-  isDeleting = false;
-  isDeleteConfirmOpen = false;
-  deleteError = '';
+  readonly isDeleting = signal(false);
+  readonly isDeleteConfirmOpen = signal(false);
+  readonly deleteError = signal('');
   validationError = '';
   readonly currentYear = new Date().getFullYear();
 
@@ -202,6 +202,7 @@ export class AppointmentForm implements OnInit {
           this.errorMessage.set(
             this.httpErrorService.message(error, 'Could not load patients.'),
           );
+          this.cdr.markForCheck();
         },
       });
 
@@ -217,6 +218,7 @@ export class AppointmentForm implements OnInit {
               this.errorMessage.set(
                 this.httpErrorService.message(error, 'Could not load doctors. Please try again.'),
               );
+              this.cdr.markForCheck();
               return EMPTY;
             }),
           ),
@@ -353,6 +355,7 @@ export class AppointmentForm implements OnInit {
 
     if (this.form.invalid) {
       this.validationError = 'Complete all required fields.';
+      this.cdr.markForCheck();
       return;
     }
 
@@ -361,6 +364,7 @@ export class AppointmentForm implements OnInit {
     const [hours, minutes] = formValue.time.split(':').map(Number);
     if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
       this.validationError = 'Select a valid appointment time.';
+      this.cdr.markForCheck();
       return;
     }
     appointmentDate.setHours(hours, minutes, 0, 0);
@@ -372,6 +376,7 @@ export class AppointmentForm implements OnInit {
       durationMinutes <= 0
     ) {
       this.validationError = 'Select a valid appointment date and duration.';
+      this.cdr.markForCheck();
       return;
     }
 
@@ -382,6 +387,7 @@ export class AppointmentForm implements OnInit {
       const dateOfBirth = formValue.newPatientDateOfBirth;
       if (dateOfBirth > todayString) {
         this.validationError = 'Date of birth cannot be in the future.';
+        this.cdr.markForCheck();
         return;
       }
 
@@ -392,6 +398,7 @@ export class AppointmentForm implements OnInit {
       const gender = formValue.newPatientGender;
       if (!name || !surname || !phone || !homeAddress || !gender) {
         this.validationError = 'Complete all required patient fields.';
+        this.cdr.markForCheck();
         return;
       }
 
@@ -411,6 +418,7 @@ export class AppointmentForm implements OnInit {
     const branch = this.branchStore.selectedBranch();
     if (!this.isEditing && !branch) {
       this.errorMessage.set('Select a branch before creating an appointment.');
+      this.cdr.markForCheck();
       return;
     }
 
@@ -449,6 +457,7 @@ export class AppointmentForm implements OnInit {
       };
     } else {
       this.errorMessage.set('Select a branch before creating an appointment.');
+      this.cdr.markForCheck();
       return;
     }
 
@@ -456,7 +465,10 @@ export class AppointmentForm implements OnInit {
     patientId$
       .pipe(
         switchMap(saveAppointment),
-        finalize(() => this.isSubmitting.set(false)),
+        finalize(() => {
+          this.isSubmitting.set(false);
+          this.cdr.markForCheck();
+        }),
       )
       .subscribe({
         next: (appointment) => {
@@ -471,6 +483,7 @@ export class AppointmentForm implements OnInit {
               'Could not save appointment. Check the details and try again.',
             ),
           );
+          this.cdr.markForCheck();
         },
       });
   }
@@ -507,36 +520,41 @@ export class AppointmentForm implements OnInit {
   deleteAppointment(): void {
     const appointmentId = this.appointmentId;
 
-    if (!appointmentId || this.isDeleting) return;
+    if (!appointmentId || this.isDeleting()) return;
 
-    this.isDeleteConfirmOpen = true;
+    this.isDeleteConfirmOpen.set(true);
   }
 
   confirmDeleteAppointment(): void {
     const appointmentId = this.appointmentId;
-    if (!appointmentId || this.isDeleting) return;
+    if (!appointmentId || this.isDeleting()) return;
 
-    this.isDeleteConfirmOpen = false;
-    this.isDeleting = true;
-    this.deleteError = '';
+    this.isDeleteConfirmOpen.set(false);
+    this.isDeleting.set(true);
+    this.deleteError.set('');
+    this.cdr.markForCheck();
 
     this.appointmentService
       .deleteAppointment(appointmentId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => this.delete.emit(appointmentId),
+        next: () => {
+          this.delete.emit(appointmentId);
+          this.cdr.markForCheck();
+        },
         error: (error) => {
           console.error('Failed to delete appointment:', error);
-          this.deleteError = this.httpErrorService.message(
+          this.deleteError.set(this.httpErrorService.message(
             error,
             'Could not delete the appointment. Please try again.',
-          );
-          this.isDeleting = false;
+          ));
+          this.isDeleting.set(false);
+          this.cdr.markForCheck();
         },
       });
   }
 
   cancelDeleteAppointment(): void {
-    if (!this.isDeleting) this.isDeleteConfirmOpen = false;
+    if (!this.isDeleting()) this.isDeleteConfirmOpen.set(false);
   }
 }

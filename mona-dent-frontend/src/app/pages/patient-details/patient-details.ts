@@ -214,6 +214,14 @@ export class PatientDetails {
     });
   }
 
+  onAppointmentDeleted(appointmentId: string): void {
+    this.appointments.update((appointments) =>
+      appointments.filter((appointment) => appointment.appointmentId !== appointmentId),
+    );
+    this.isAppointmentFormOpen.set(false);
+    this.appointmentFormData.set(null);
+  }
+
   onVisitSaved(visit: VisitResponse): void {
     this.visits.update((visits) => [...visits, visit]);
   }

@@ -1,11 +1,11 @@
 <div class="flex min-h-screen flex-col lg:flex-row">
-  <header class="sticky top-0 z-[60] flex items-center justify-between border-b border-border bg-white px-4 py-3 lg:hidden">
+  <header class="sticky top-0 z-[60] flex items-center justify-between border-b border-[#d6e4f7] bg-white/95 px-4 py-3 backdrop-blur-xl lg:hidden">
     <a
       routerLink="/"
       (click)="mobileNavOpen.set(false)"
       class="flex min-w-0 items-center gap-2 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
     >
-      <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-sm font-bold text-white">M</span>
+      <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#2563eb] text-sm font-bold text-white shadow-md shadow-[#2563eb]/25">M</span>
       <span class="truncate font-semibold text-accent">Monecify <span class="rounded-md bg-background px-2 py-1 text-secondary">Dent</span></span>
     </a>
     <button
@@ -38,7 +38,7 @@
   <div class="flex min-h-screen min-w-0 flex-1 flex-col">
     <app-navbar />
 
-    <main class="min-w-0 flex-1 bg-background p-3 sm:p-4 lg:p-5">
+    <main class="min-w-0 flex-1 bg-[#f1f7ff] bg-[radial-gradient(ellipse_at_top_right,_rgba(37,99,235,0.13),_transparent_34rem)] p-3 sm:p-4 lg:p-8">
       <router-outlet />
     </main>
 

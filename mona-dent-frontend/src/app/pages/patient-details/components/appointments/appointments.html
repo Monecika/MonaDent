@@ -24,7 +24,8 @@
       @for (appointment of sortedAppointments(); track appointment.appointmentId) {
         <article class="relative flex min-h-17 items-center justify-between gap-4 pl-4">
           <span
-            class="absolute left-[-7px] size-3 rounded-full border-[3px] border-white bg-accent ring-4 ring-accent-bg"
+            class="absolute left-[-7px] size-3 rounded-full border-[3px] border-white ring-4"
+            [class]="statusDotClasses(appointment.status)"
           ></span>
           <div>
             <h3 class="font-semibold">
@@ -38,11 +39,7 @@
           <div class="flex shrink-0 items-center gap-2">
             <span
               class="rounded-full px-3 py-1 text-xs"
-              [class]="
-                appointment.status === 'SCHEDULED'
-                  ? 'rounded-full bg-success/10 px-3 py-1 text-xs text-success'
-                  : 'rounded-full bg-background px-3 py-1 text-xs text-secondary'
-              "
+              [class]="statusClasses(appointment.status)"
             >
               {{ statusLabel(appointment.status) | translate }}
             </span>
