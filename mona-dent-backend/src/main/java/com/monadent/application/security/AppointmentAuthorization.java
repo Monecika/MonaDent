@@ -32,7 +32,7 @@ public class AppointmentAuthorization {
 
         Appointment appointment = appointmentJpaRepository.findById(appointmentId).orElse(null);
         if (appointment == null) {
-            return false;
+            return true;
         }
         return actor.getBranchIds().contains(appointment.getBranchId());
     }

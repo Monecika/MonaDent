@@ -6,7 +6,7 @@ import { Container } from '../../components/container/container';
 import { Button } from '../../components/custom-inputs/button/button';
 import { AppointmentForm } from '../appointments/components/appointment-form/appointment-form';
 import { PatientForm } from '../patients/components/patient-form/patient-form';
-import { AppointmentResponse } from '../../core/models/Appointment';
+import { AppointmentResponse, AppointmentStatus } from '../../core/models/Appointment';
 import { AppointmentService } from '../../core/services/appointment-service';
 import { BranchStore } from '../../core/stores/branch-store';
 import { PatientResponse } from '../../core/models/Patient';
@@ -124,6 +124,22 @@ export class Dashboard implements OnInit {
 
   formatTime(date: string): string {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  statusClasses(status: AppointmentStatus): string {
+    switch (status) {
+      case 'COMPLETED':
+        return 'bg-emerald-100 text-emerald-800';
+      case 'IN_PROGRESS':
+        return 'bg-amber-100 text-amber-800';
+      case 'CANCELLED':
+        return 'bg-rose-100 text-rose-700';
+      case 'NO_SHOW':
+        return 'bg-red-100 text-red-800';
+      case 'SCHEDULED':
+      default:
+        return 'bg-blue-100 text-blue-800';
+    }
   }
 
   closeAppointmentPopup = () => {

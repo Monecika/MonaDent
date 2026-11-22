@@ -147,6 +147,7 @@
       [data]="appointmentFormData()"
       (close)="isAppointmentFormOpen.set(false)"
       (saved)="onAppointmentSaved($event)"
+      (delete)="onAppointmentDeleted($event)"
     />
   }
 

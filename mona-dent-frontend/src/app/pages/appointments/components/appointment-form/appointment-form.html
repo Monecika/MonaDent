@@ -176,23 +176,23 @@
 
   <div class="form-actions-left">
     @if (isEditing) {
-      @if (deleteError) {
-        <p class="mb-2 text-sm text-error">{{ deleteError | translate }}</p>
+      @if (deleteError()) {
+        <p class="mb-2 text-sm text-error" role="alert">{{ deleteError() | translate }}</p>
       }
 
       <button
         type="button"
         class="rounded-lg border border-error/20 px-3 py-2 text-sm font-medium text-error transition hover:bg-error-bg disabled:opacity-50"
-        [disabled]="isDeleting"
+        [disabled]="isDeleting()"
         (click)="deleteAppointment()"
       >
-        {{ (isDeleting ? 'Deleting...' : 'Delete appointment') | translate }}
+        {{ (isDeleting() ? 'Deleting...' : 'Delete appointment') | translate }}
       </button>
     }
   </div>
 </app-base-form>
 
-@if (isDeleteConfirmOpen) {
+@if (isDeleteConfirmOpen()) {
   <app-confirmation-dialog
     [title]="'Delete appointment' | translate"
     [message]="'Delete this appointment? This action cannot be undone.' | translate"

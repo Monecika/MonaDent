@@ -1,32 +1,32 @@
 <aside
-  class="border-b border-border bg-white p-3 lg:sticky lg:top-0 lg:block lg:h-screen lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:p-5"
+  class="border-b border-[#d6e4f7] bg-[#f8fbff] p-3 shadow-lg shadow-[#1e3a8a]/5 lg:sticky lg:top-0 lg:block lg:h-screen lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:p-5 lg:shadow-none"
   [class.hidden]="!mobileOpen()"
 >
   <section class="hidden items-center gap-2 lg:flex cursor-pointer" routerLink="/">
-    <p class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent font-bold text-white">
+    <p class="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#2563eb] font-bold text-white shadow-md shadow-[#2563eb]/25">
       M
     </p>
     <div class="min-w-0">
-      <p class="whitespace-nowrap text-accent font-semibold">
+      <p class="whitespace-nowrap font-bold tracking-tight text-[#1e3a8a]">
         Monecify <span class="py-1 px-2 bg-background text-secondary rounded-md">Dent</span>
       </p>
-      <p class="text-xs text-secondary">{{ 'Dental practice system' | translate }}</p>
+      <p class="mt-0.5 text-[11px] text-[#77849a]">{{ 'Dental practice system' | translate }}</p>
     </div>
   </section>
 
-  <section class="grid grid-cols-1 gap-3 lg:mt-10 lg:flex lg:flex-col lg:gap-3">
+  <section class="grid grid-cols-1 gap-3 lg:mt-12 lg:flex lg:flex-col lg:gap-7">
     @for (aside of asideBar; track aside.section) {
       <div class="flex min-w-0 flex-col gap-0.5">
-        <p class="text-[10px] text-secondary font-semibold tracking-widest">
+        <p class="mb-2 px-3 text-[10px] font-bold tracking-[0.16em] text-[#7c91ad]">
           {{ aside.section | translate }}
         </p>
 
         @for (page of aside.pages; track page.title) {
           @if (canViewPage(page)) {
             <a
-              class="flex min-w-0 items-center gap-2 rounded-md p-2 cursor-pointer group not-[.active]:hover:bg-background"
+              class="group flex min-h-[42px] min-w-0 cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-[#eaf2ff]"
               [routerLink]="page.route"
-              routerLinkActive="active bg-accent *:text-white"
+              routerLinkActive="active !bg-[#dbeafe] !text-[#1e3a8a] *:!text-[#1e3a8a]"
               [routerLinkActiveOptions]="{
                 paths: page.route === '/' ? 'exact' : 'subset',
                 queryParams: 'ignored',
@@ -34,11 +34,11 @@
               (click)="navigationSelected.emit()"
             >
               <span
-                class="flex items-center size-5 text-primary/80 group-not-[.active]:group-hover:text-accent"
+                class="flex size-5 items-center text-[#1e3a8a]/65 group-hover:text-[#2563eb]"
               >
                 <ng-container *ngComponentOutlet="page.icon" />
               </span>
-              <p class="text-secondary group-not-[.active]:group-hover:text-accent">
+              <p class="text-[13px] font-medium text-[#64748b] group-hover:text-[#1d4ed8]">
                 {{ page.title | translate }}
               </p>
             </a>

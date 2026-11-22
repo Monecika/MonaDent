@@ -125,10 +125,7 @@ public class AppointmentService implements AppointmentManagement {
 
     @Override
     public void deleteAppointment(UUID appointmentId) {
-        Appointment appointment = appointmentJpaRepository.findById(appointmentId)
-                                                          .orElseThrow(() -> new BaseException(HttpStatus.NOT_FOUND.value(),
-                                                                                               ErrorCode.APPOINTMENT_NOT_FOUND));
-        appointmentJpaRepository.delete(appointment);
+        appointmentJpaRepository.findById(appointmentId).ifPresent(appointmentJpaRepository::delete);
     }
 
     @Scheduled(fixedRate = 60_000)
