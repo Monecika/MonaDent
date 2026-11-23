@@ -77,14 +77,6 @@ function Remove-OrphanedFreshInstall {
             throw "Patient files already exist under '$patientFiles', but the Mona Dent configuration is missing. Setup stopped to preserve clinic data."
         }
     }
-    $existingBackups = Join-Path $DataRoot 'backups'
-    if (Test-Path -LiteralPath $existingBackups) {
-        $storedBackups = Get-ChildItem -LiteralPath $existingBackups -Force -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($storedBackups) {
-            throw "Backups already exist under '$existingBackups', but the Mona Dent configuration is missing. Setup stopped to preserve them."
-        }
-    }
-
     $serviceDetails = Get-CimInstance -ClassName Win32_Service -Filter "Name='$ServiceName'" -ErrorAction SilentlyContinue
     if ($serviceDetails) {
         $orphanDataPath = $null
@@ -186,10 +178,17 @@ function Remove-OrphanedFreshInstall {
         Write-InstallLog "Removed orphaned PostgreSQL service '$ServiceName'."
     }
 
+    $existingBackups = Join-Path $DataRoot 'backups'
     if (Test-Path -LiteralPath $DataRoot) {
-        & icacls.exe $DataRoot /setowner '*S-1-5-32-544' /T /C /Q 2>&1 | Out-Null
-        & icacls.exe $DataRoot /grant:r '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-18:(OI)(CI)F' /T /C /Q 2>&1 | Out-Null
-        Remove-Item -LiteralPath $DataRoot -Recurse -Force -ErrorAction Stop
+        # Keep the backup repository and recovery key intact while resetting
+        # only the incomplete application/database installation.
+        Get-ChildItem -LiteralPath $DataRoot -Force -ErrorAction Stop |
+            Where-Object { $_.FullName -ne $existingBackups } |
+            ForEach-Object {
+                & icacls.exe $_.FullName /setowner '*S-1-5-32-544' /T /C /Q 2>&1 | Out-Null
+                & icacls.exe $_.FullName /grant:r '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-18:(OI)(CI)F' /T /C /Q 2>&1 | Out-Null
+                Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction Stop
+            }
     }
     New-Item -ItemType Directory -Force -Path $DataRoot, $PostgreSqlData, (Join-Path $DataRoot 'files'), (Join-Path $DataRoot 'backups'), $LogDirectory | Out-Null
     & icacls.exe $DataRoot /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
